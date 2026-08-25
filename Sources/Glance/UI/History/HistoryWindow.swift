@@ -265,7 +265,9 @@ struct HistoryView: View {
             .padding(.bottom, 8)
             .help("Filter snapshots by status (All, Translated, Failed, Empty, Pending)")
 
-            Divider()
+            Rectangle()
+                .fill(Color.primary.opacity(0.06))
+                .frame(height: 1)
 
             if model.entries.isEmpty {
                 VStack(spacing: 8) {
@@ -310,9 +312,12 @@ struct HistoryView: View {
                     }
                 }
                 .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
             }
 
-            Divider()
+            Rectangle()
+                .fill(Color.primary.opacity(0.06))
+                .frame(height: 1)
 
             HStack {
                 Text(model.entries.count == 1 ? "1 Snapshot" : "\(model.entries.count) Snapshots")
@@ -327,7 +332,7 @@ struct HistoryView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
-            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
+            .background(Color.clear)
         }
     }
 
@@ -409,7 +414,7 @@ struct HistoryView: View {
                 .foregroundStyle(.tertiary)
             Text(model.searchQuery.isEmpty && model.statusFilter == nil ? "No snapshots yet" : "No matching snapshots")
                 .font(.system(size: 14, weight: .medium))
-            Text(model.searchQuery.isEmpty ? "Press ⌥⇧T to capture and translate your first region." : "Try adjusting your search query or filter.")
+            Text(model.searchQuery.isEmpty ? "Press \(model.settings.hotkey.displayString) to capture and translate your first region." : "Try adjusting your search query or filter.")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -495,7 +500,7 @@ struct HistoryDetailView: View {
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.clear)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 translateButton
