@@ -8,10 +8,14 @@ cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
 
+# Universal 2 Binary: Build for both Apple Silicon (arm64) and Intel (x86_64)
+ARCH_FLAGS=("--arch" "arm64" "--arch" "x86_64")
+
 # --disable-sandbox: some managed/agent environments forbid nested sandbox-exec;
 # on a normal Mac this only skips SwiftPM's manifest-compile sandbox (harmless).
-swift build -c "$CONFIG" --disable-sandbox
-BIN_PATH="$(swift build -c "$CONFIG" --show-bin-path)"
+echo "Building Universal 2 binary (arm64 + x86_64) [$CONFIG]..."
+swift build -c "$CONFIG" "${ARCH_FLAGS[@]}" --disable-sandbox
+BIN_PATH="$(swift build -c "$CONFIG" "${ARCH_FLAGS[@]}" --show-bin-path)"
 
 APP_DIR="build/Glance.app"
 rm -rf "$APP_DIR"
