@@ -81,20 +81,17 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-# Signing: prefer the stable GlanceDev identity so TCC grants (Screen Recording,
-# etc.) survive rebuilds. Ad-hoc changes the cdhash every build and silently
-# invalidates permissions.
-SIGN_IDENTITY="${SIGN_IDENTITY:-GlanceDev}"
-if [ -z "${CI:-}" ]; then
-    if ! security find-identity -v -p codesigning 2>/dev/null | grep -q "$SIGN_IDENTITY"; then
-        if [ -f "scripts/make_cert.sh" ]; then
-            echo "Creating stable self-signed identity '$SIGN_IDENTITY'..."
-            bash scripts/make_cert.sh || true
-        fi
+# Signing: use the shared GlanceCodeSign identity so TCC grants (Screen Recording)
+# survive across local builds and GitHub Actions release updates.
+SIGN_IDENTITY="${SIGN_IDENTITY:-GlanceCodeSign}"
+if ! security find-identity -p codesigning 2>/dev/null | grep -q "$SIGN_IDENTITY"; then
+    if [ -f "scripts/import_cert.sh" ]; then
+        echo "Importing stable signing identity '$SIGN_IDENTITY'..."
+        bash scripts/import_cert.sh || true
     fi
 fi
 
-if security find-identity -v -p codesigning 2>/dev/null | grep -q "$SIGN_IDENTITY"; then
+if security find-identity -p codesigning 2>/dev/null | grep -q "$SIGN_IDENTITY"; then
     if codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_DIR" 2>/dev/null; then
         echo "Signed with stable identity: $SIGN_IDENTITY"
     else
