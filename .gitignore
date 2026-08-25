@@ -24,8 +24,6 @@ xcuserdata/
 
 # User-Excluded Project Artifacts
 plans/
-design/
-design.md
 
 # Environment, Keys & Logs
 .env
