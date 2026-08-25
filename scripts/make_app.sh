@@ -24,6 +24,14 @@ mkdir -p "$APP_DIR/Contents/Resources"
 
 cp "$BIN_PATH/Glance" "$APP_DIR/Contents/MacOS/Glance"
 
+# Stamp target SDK 26.0 into Mach-O LC_BUILD_VERSION load command so macOS Tahoe
+# enables modern Liquid Glass floating sidebar styling without falling into compatibility mode.
+if command -v vtool >/dev/null 2>&1; then
+    echo "Stamping target SDK 26.0 via vtool..."
+    vtool -set-build-version macos 14.0 26.0 -replace \
+          -output "$APP_DIR/Contents/MacOS/Glance" "$APP_DIR/Contents/MacOS/Glance" 2>/dev/null || true
+fi
+
 if [ ! -f "AppIcon.icns" ]; then
     swift scripts/generate_icon.swift
     iconutil -c icns AppIcon.iconset -o AppIcon.icns
