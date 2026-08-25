@@ -184,13 +184,8 @@ final class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelegat
 
     // MARK: - Download Asset
 
-    /// Downloads the release zip bundle from GitHub (or runs simulation if mock release).
+    /// Downloads the release zip bundle from GitHub.
     func startDownload(for release: GitHubRelease) {
-        if release.tag_name.contains("mock") || release.name?.contains("Overhaul") == true {
-            simulateDownloadProgress(release: release)
-            return
-        }
-
         guard let asset = release.appZipAsset else {
             state = .error(message: "No Glance.zip asset attached to release \(release.tag_name).")
             return
@@ -203,58 +198,6 @@ final class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelegat
         let task = session.downloadTask(with: asset.browser_download_url)
         self.downloadTask = task
         task.resume()
-    }
-
-    // MARK: - Simulation & Testing
-
-    /// Simulates discovering a newer version on GitHub with release notes.
-    func simulateUpdateAvailable(version: String = "v0.2.0") {
-        let mockRelease = GitHubRelease(
-            tag_name: version,
-            name: "Glance \(version) — AI Vision & UI Overhaul",
-            body: """
-            ### What's New in \(version):
-            - ⚡ Enhanced OCR & Vision Multimodal LLM translation pipeline
-            - 🎨 Refined floating HUD typography and layout
-            - 🚀 Universal 2 binary with native Apple Silicon & Intel optimizations
-            - 🔄 Automated GitHub release and self-update subsystem
-            - 🛡️ Fixed Keychain API key persistence edge cases
-            """,
-            html_url: URL(string: "https://github.com/activebook/Glance/releases")!,
-            published_at: ISO8601DateFormatter().string(from: Date()),
-            assets: [
-                GitHubReleaseAsset(
-                    name: "Glance.zip",
-                    size: 5_650_000,
-                    browser_download_url: URL(string: "https://github.com/activebook/Glance/releases/download/\(version)/Glance.zip")!
-                )
-            ]
-        )
-        self.latestRelease = mockRelease
-        self.state = .updateAvailable(release: mockRelease)
-        self.showUpdateModal = true
-    }
-
-    /// Simulates smooth download progress bar progression for testing.
-    func simulateDownloadProgress(release: GitHubRelease) {
-        self.activeRelease = release
-        let total: Int64 = 5_650_000
-        state = .downloading(progress: 0.0, bytesWritten: 0, totalBytes: total)
-
-        Task {
-            for step in 1...25 {
-                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms per tick
-                let progress = Double(step) / 25.0
-                let written = Int64(progress * Double(total))
-                self.state = .downloading(progress: progress, bytesWritten: written, totalBytes: total)
-            }
-            try? await Task.sleep(nanoseconds: 250_000_000)
-            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent("GlanceMockUpdate-\(UUID().uuidString)")
-            try? FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-            let mockZip = tempDir.appendingPathComponent("Glance.zip")
-            FileManager.default.createFile(atPath: mockZip.path, contents: Data())
-            self.state = .readyToInstall(zipURL: mockZip, release: release)
-        }
     }
 
     // MARK: - URLSessionDownloadDelegate
@@ -305,6 +248,9 @@ final class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelegat
     func installAndRelaunch(zipURL: URL) {
         state = .installing
 
+        let currentPID = ProcessInfo.processInfo.processIdentifier
+        let currentAppURL = Bundle.main.bundleURL
+
         DispatchQueue.global(qos: .userInitiated).async {
             let fm = FileManager.default
             let extractDir = zipURL.deletingLastPathComponent().appendingPathComponent("Extracted")
@@ -331,15 +277,17 @@ final class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelegat
                                   userInfo: [NSLocalizedDescriptionKey: "Extracted archive did not contain Glance.app"])
                 }
 
-                let currentAppURL = Bundle.main.bundleURL
-
                 // 3. Script-assisted atomic replacement and relaunch
+                let tempParentDir = zipURL.deletingLastPathComponent().path
                 let relaunchScript = """
-                sleep 0.8
+                while kill -0 \(currentPID) 2>/dev/null; do
+                    sleep 0.1
+                done
                 rm -rf "\(currentAppURL.path)"
                 cp -R "\(newAppURL.path)" "\(currentAppURL.path)"
+                xattr -dr com.apple.quarantine "\(currentAppURL.path)" 2>/dev/null || true
                 open "\(currentAppURL.path)"
-                rm -rf "\(extractDir.deletingLastPathComponent().path)"
+                rm -rf "\(tempParentDir)"
                 """
 
                 let scriptProcess = Process()
@@ -348,7 +296,7 @@ final class UpdateManager: NSObject, ObservableObject, URLSessionDownloadDelegat
                 try scriptProcess.run()
 
                 DispatchQueue.main.async {
-                    NSApp.terminate(nil)
+                    exit(0)
                 }
             } catch {
                 DispatchQueue.main.async {
