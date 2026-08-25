@@ -32,6 +32,8 @@ final class HistoryWindowController: NSWindowController, NSWindowDelegate {
         window.titleVisibility = .hidden
         window.minSize = NSSize(width: 980, height: 640)
         window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
+        window.toolbarStyle = .unified
         window.contentView = NSHostingView(
             rootView: HistoryView(model: model, onShowSettings: nil)
                 .ignoresSafeArea(edges: .top)
@@ -134,6 +136,7 @@ struct HistoryView: View {
         } detail: {
             detailPane
         }
+        .navigationSplitViewStyle(.balanced)
         .navigationSplitViewColumnWidth(min: 340, ideal: 400, max: 540)
         .searchable(text: $model.searchQuery, placement: .toolbar, prompt: "Search translation or source text…")
         .toolbar {
