@@ -41,6 +41,28 @@ enum TranslationTone: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    /// Detailed condition and purpose description for the settings UI.
+    var useCase: String {
+        switch self {
+        case .natural:
+            return "Best for everyday reading, articles, and general browsing. Produces balanced, idiomatic translation that sounds natural to native speakers."
+        case .technical:
+            return "Best for developer docs, code comments, and technical manuals. Accurately preserves APIs, code syntax, variable identifiers, and engineering jargon."
+        case .casual:
+            return "Best for chat messages, social media, forums, and dialogue. Uses relaxed, localized slang and colloquial phrasing."
+        case .concise:
+            return "Best for quick glance overviews and fast reading. Strips conversational filler and delivers the essential factual message in minimal words."
+        case .explanatory:
+            return "Best for language learning and study. Translates the full text and provides helpful context notes explaining key vocabulary and idioms."
+        case .polite:
+            return "Best for business emails, official correspondence, and client communication. Uses formal honorifics and respectful etiquette."
+        case .imaginative:
+            return "Best for fiction, poetry, marketing copy, and gaming lore. Translates with vivid imagery, literary metaphors, and expressive storytelling flair."
+        case .sarcastic:
+            return "Best for memes, jokes, entertainment, and banter. Delivers punchy translations with sharp wit, irony, and humorous cynicism."
+        }
+    }
+
     /// Explicit directive interpolated into the LLM system prompt.
     var promptInstruction: String {
         switch self {

@@ -16,10 +16,20 @@ struct GeneralTab: View {
                     }
                 }
 
-                Picker("Tone & Style", selection: $settings.translationTone) {
-                    ForEach(TranslationTone.allCases) { tone in
-                        Text(tone.displayName).tag(tone)
+                VStack(alignment: .leading, spacing: 5) {
+                    Picker("Tone & Style", selection: $settings.translationTone) {
+                        ForEach(TranslationTone.allCases) { tone in
+                            Text(tone.displayName).tag(tone)
+                        }
                     }
+
+                    Text(settings.translationTone.useCase)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
+                        .animation(.easeInOut(duration: 0.15), value: settings.translationTone)
                 }
 
                 LabeledContent("Result panel auto-dismiss") {
