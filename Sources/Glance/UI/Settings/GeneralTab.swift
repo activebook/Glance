@@ -92,24 +92,6 @@ struct GeneralTab: View {
                 }
 
                 Toggle("Automatically check for updates on launch", isOn: $settings.automaticallyCheckForUpdates)
-
-                HStack(spacing: 6) {
-                    Button {
-                        updateManager.simulateUpdateAvailable(version: "v0.2.0")
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 11))
-                            Text("Simulate Update (v0.2.0 Test)")
-                                .font(.system(size: 11))
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.indigo)
-                    .help("Simulates discovering a new v0.2.0 release to test the full download progress and install UI.")
-
-                    Spacer()
-                }
             }
 
             Section("Startup") {
