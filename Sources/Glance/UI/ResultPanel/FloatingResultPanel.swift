@@ -193,8 +193,15 @@ struct DismissPanelAction {
     func run() { action() }
 }
 
+private struct DismissPanelKey: EnvironmentKey {
+    static let defaultValue = DismissPanelAction {}
+}
+
 extension EnvironmentValues {
-    @Entry var dismissPanel = DismissPanelAction {}
+    var dismissPanel: DismissPanelAction {
+        get { self[DismissPanelKey.self] }
+        set { self[DismissPanelKey.self] = newValue }
+    }
 }
 
 struct ResultPanelView: View {

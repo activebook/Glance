@@ -93,6 +93,7 @@ final class CaptureCoordinator {
             return
         }
 
+        let savedRecord = record
         lastCaptureRect = globalRect
         state = .idle
         onCaptureSaved?()
@@ -106,7 +107,7 @@ final class CaptureCoordinator {
                 model: settings.activeEndpoint()?.model,
                 latencyMs: nil
             ),
-            record: record,
+            record: savedRecord,
             near: globalRect,
             timeout: 60,
             style: settings.hudAppearanceStyle,
@@ -119,7 +120,7 @@ final class CaptureCoordinator {
 
         let image = captured.image
         Task { @MainActor in
-            await self.translate(record: record, image: image)
+            await self.translate(record: savedRecord, image: image)
         }
     }
 
@@ -278,9 +279,9 @@ final class CaptureCoordinator {
                           translatedFontSize: settings.translatedFontSize,
                           translatedTextColor: settings.translatedTextColor,
                           onRetry: { [weak self] in
-                              guard let record, let image else { return }
+                              guard let self, let record, let image else { return }
                               Task { @MainActor in
-                                  await self?.translate(record: record, image: image)
+                                  await self.translate(record: record, image: image)
                               }
                           })
     }
