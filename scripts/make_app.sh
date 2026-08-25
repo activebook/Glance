@@ -75,14 +75,21 @@ PLIST
 
 # Signing: prefer the stable GlanceDev identity so TCC grants (Screen Recording,
 # etc.) survive rebuilds. Ad-hoc changes the cdhash every build and silently
-# invalidates permissions. Run scripts/make_cert.sh once to create it.
+# invalidates permissions.
 SIGN_IDENTITY="${SIGN_IDENTITY:-GlanceDev}"
+if ! security find-identity -v -p codesigning 2>/dev/null | grep -q "$SIGN_IDENTITY"; then
+    if [ -f "scripts/make_cert.sh" ]; then
+        echo "Creating stable self-signed identity '$SIGN_IDENTITY'..."
+        bash scripts/make_cert.sh || true
+    fi
+fi
+
 if security find-identity -v -p codesigning 2>/dev/null | grep -q "$SIGN_IDENTITY"; then
-    codesign --force --sign "$SIGN_IDENTITY" "$APP_DIR"
+    codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_DIR"
     echo "Signed with stable identity: $SIGN_IDENTITY"
 else
-    codesign --force --sign - "$APP_DIR"
-    echo "Signed ad-hoc (run scripts/make_cert.sh for a stable identity that survives rebuilds)"
+    codesign --force --deep --sign - "$APP_DIR"
+    echo "Signed ad-hoc"
 fi
 
 echo "Built $APP_DIR"
