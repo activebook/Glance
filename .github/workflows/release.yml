@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Semantic Version Bump Type (patch, minor, major)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release-production
+  cancel-in-progress: false
+
+jobs:
+  publish-release:
+    name: Build & Publish Release
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Semantic Version Bump
+        id: semver
+        run: |
+          # 1. Fetch latest Git tag or default to v0.1.0 base
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "Latest tag found: ${LATEST_TAG:-none}"
+          
+          if [ -z "$LATEST_TAG" ]; then
+            NEW_VERSION="0.1.0"
+            NEW_TAG="v0.1.0"
+          else
+            VERSION_NUM="${LATEST_TAG#v}"
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NUM"
+            MAJOR=${MAJOR:-0}
+            MINOR=${MINOR:-1}
+            PATCH=${PATCH:-0}
+            
+            MANUAL_BUMP="${{ github.event.inputs.bump }}"
+            COMMIT_MSG="$(git log -1 --pretty=%B)"
+            
+            if [ -n "$MANUAL_BUMP" ]; then
+              BUMP_TYPE="$MANUAL_BUMP"
+            elif echo "$COMMIT_MSG" | grep -qE "(BREAKING CHANGE|feat!|fix!)"; then
+              BUMP_TYPE="major"
+            elif echo "$COMMIT_MSG" | grep -qE "^feat(\(.*\))?:"; then
+              BUMP_TYPE="minor"
+            else
+              BUMP_TYPE="patch"
+            fi
+            
+            case "$BUMP_TYPE" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch|*)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+            
+            NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          fi
+          
+          echo "Computed Version: $NEW_VERSION"
+          echo "Computed Tag: $NEW_TAG"
+          
+          echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${NEW_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Create and Push Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          TAG="${{ steps.semver.outputs.tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, skipping tag creation."
+          else
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+            echo "Created and pushed tag $TAG."
+          fi
+
+      - name: Cache SwiftPM Dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Build & Package Universal Release
+        env:
+          VERSION: ${{ steps.semver.outputs.version }}
+        run: |
+          scripts/release.sh
+
+      - name: Generate Checksums
+        run: |
+          cd build
+          shasum -a 256 Glance.zip > Glance.zip.sha256
+          cat Glance.zip.sha256
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.semver.outputs.tag }}
+          name: "Glance ${{ steps.semver.outputs.tag }}"
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          files: |
+            build/Glance.zip
+            build/Glance.zip.sha256

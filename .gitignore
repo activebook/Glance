@@ -26,8 +26,6 @@ xcuserdata/
 plans/
 design/
 design.md
-Tests/
-tests/
 
 # Environment, Keys & Logs
 .env

@@ -34,7 +34,15 @@ if [ -f "AppIcon.icns" ]; then
     cp "AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
 fi
 
-cat > "$APP_DIR/Contents/Info.plist" <<'PLIST'
+# Version Resolution: prioritize $VERSION env var, fallback to latest git tag, or default to 0.1.0
+GIT_TAG="$(git describe --tags --abbrev=0 2>/dev/null || echo "")"
+RAW_VERSION="${VERSION:-${GIT_TAG:-0.1.0}}"
+APP_VERSION="${RAW_VERSION#v}" # Strip leading 'v' if present (e.g. v0.1.0 -> 0.1.0)
+APP_BUILD="${BUILD_NUM:-$(git rev-list --count HEAD 2>/dev/null || echo "1")}"
+
+echo "Packaging Glance.app (Version: $APP_VERSION, Build: $APP_BUILD)..."
+
+cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -50,9 +58,9 @@ cat > "$APP_DIR/Contents/Info.plist" <<'PLIST'
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
+    <string>${APP_VERSION}</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>${APP_BUILD}</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>

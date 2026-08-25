@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    name: Test & Build Universal Binary
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Cache SwiftPM Dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Run Test Suite
+        run: swift test --parallel
+
+      - name: Build Universal App Bundle
+        run: scripts/make_app.sh release
+
+      - name: Verify Universal 2 Binary Slices
+        run: |
+          echo "Verifying binary architecture slices..."
+          lipo -info build/Glance.app/Contents/MacOS/Glance
+          file build/Glance.app/Contents/MacOS/Glance
+          
+          # Assert both architectures exist in the fat binary
+          lipo -info build/Glance.app/Contents/MacOS/Glance | grep -q "arm64"
+          lipo -info build/Glance.app/Contents/MacOS/Glance | grep -q "x86_64"
+          echo "Universal binary verified successfully (arm64 + x86_64)."
+
+      - name: Upload Glance.app Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Glance-macOS-Universal
+          path: build/Glance.app
+          retention-days: 7
