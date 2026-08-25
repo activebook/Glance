@@ -3,12 +3,12 @@ import Carbon.HIToolbox
 @testable import Glance
 
 final class HotkeyComboTests: XCTestCase {
-    func test_default_isOptionShiftT() {
+    func test_default_isOptionG() {
         let combo = HotkeyCombo.default
-        XCTAssertEqual(combo.keyCode, UInt32(17)) // kVK_ANSI_T
+        XCTAssertEqual(combo.keyCode, UInt32(kVK_ANSI_G)) // kVK_ANSI_G
         XCTAssertTrue(combo.carbonModifiers & UInt32(optionKey) != 0)
-        XCTAssertTrue(combo.carbonModifiers & UInt32(shiftKey) != 0)
-        XCTAssertEqual(combo.displayString, "⌥⇧T")
+        XCTAssertEqual(combo.carbonModifiers & UInt32(shiftKey), 0)
+        XCTAssertEqual(combo.displayString, "⌥G")
     }
 
     func test_displayString_modifierOrder() {

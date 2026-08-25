@@ -7,10 +7,10 @@ struct HotkeyCombo: Equatable, Codable {
     var keyCode: UInt32
     var carbonModifiers: UInt32
 
-    /// ⌥⇧T — chosen to collide with nothing in macOS defaults.
+    /// ⌥G (Option + G) — ergonomic, conflict-free default for Glance.
     static let `default` = HotkeyCombo(
-        keyCode: UInt32(kVK_ANSI_T),
-        carbonModifiers: UInt32(optionKey | shiftKey)
+        keyCode: UInt32(kVK_ANSI_G),
+        carbonModifiers: UInt32(optionKey)
     )
 
     // MARK: - Conversion from NSEvent

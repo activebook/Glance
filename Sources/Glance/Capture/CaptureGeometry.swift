@@ -12,6 +12,14 @@ enum CaptureGeometry {
                height: rect.height)
     }
 
+    /// Converts a CoreGraphics rect (origin top-left) to AppKit-global space (origin bottom-left).
+    static func appKitRect(fromCGRect rect: CGRect, primaryScreenHeight: CGFloat) -> CGRect {
+        CGRect(x: rect.minX,
+               y: primaryScreenHeight - rect.maxY,
+               width: rect.width,
+               height: rect.height)
+    }
+
     /// Primary display height in points (the flip reference).
     static var primaryScreenHeight: CGFloat {
         NSScreen.screens.first?.frame.height ?? 0
