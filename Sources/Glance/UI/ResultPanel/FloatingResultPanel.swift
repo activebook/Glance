@@ -219,11 +219,11 @@ struct ResultPanelView: View {
     let onOpenHistory: ((UUID?) -> Void)?
 
     @Environment(\.dismissPanel) private var dismiss
+    @ObservedObject private var ttsManager = TTSManager.shared
     @State private var copiedText: String?
     @State private var copiedAll = false
     @State private var isHovered = false
     @State private var progress: CGFloat = 1.0
-    @State private var speechSynthesizer = AVSpeechSynthesizer()
 
     private var isProcessing: Bool {
         if case .processing = content { return true }
@@ -325,7 +325,13 @@ struct ResultPanelView: View {
                         .contextMenu {
                             Button("Copy Translation") { copy(item.translation) }
                             Button("Copy Original") { copy(item.source) }
-                            Button("Pronounce Translation") { speak(item.translation) }
+                            Button(ttsManager.isPlaying && ttsManager.currentPlayingText == item.translation ? "Stop Audio" : "Pronounce Translation") {
+                                if ttsManager.isPlaying && ttsManager.currentPlayingText == item.translation {
+                                    ttsManager.stop()
+                                } else {
+                                    speak(item.translation)
+                                }
+                            }
                         }
 
                         if index < items.count - 1 {
@@ -333,9 +339,10 @@ struct ResultPanelView: View {
                         }
                     }
                 }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
             }
+            .frame(maxHeight: 280)
 
         case .empty:
             VStack(spacing: 8) {
@@ -396,16 +403,33 @@ struct ResultPanelView: View {
                 .buttonStyle(.plain)
                 .help("Copy all translations")
 
-                // TTS Pronounce
+                // TTS Pronounce / Stop
                 Button {
-                    speakAllItems(items)
+                    if ttsManager.isPlaying {
+                        ttsManager.stop()
+                    } else {
+                        speakAllItems(items)
+                    }
                 } label: {
-                    Image(systemName: "speaker.wave.2")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+                    if ttsManager.isPlaying {
+                        HStack(spacing: 3) {
+                            Image(systemName: "square.fill")
+                                .font(.system(size: 8))
+                            Text("Stop")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(.red)
+                    } else if ttsManager.isLoading {
+                        ProgressView()
+                            .controlSize(.mini)
+                    } else {
+                        Image(systemName: "speaker.wave.2")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .buttonStyle(.plain)
-                .help("Pronounce translation")
+                .help(ttsManager.isPlaying ? "Stop pronunciation playback" : "Pronounce translation aloud (Text-to-Speech)")
             }
 
             if let id = record?.id {
@@ -481,10 +505,8 @@ struct ResultPanelView: View {
     }
 
     private func speak(_ text: String) {
-        speechSynthesizer.stopSpeaking(at: .immediate)
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
-        speechSynthesizer.speak(utterance)
+        let settings = SettingsStore()
+        ttsManager.speak(text: text, language: settings.targetLanguage, engine: settings.ttsEngine, rate: settings.ttsRate)
     }
 
     private func speakAllItems(_ items: [TranslationItem]) {

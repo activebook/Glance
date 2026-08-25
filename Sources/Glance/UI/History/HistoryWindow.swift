@@ -485,7 +485,7 @@ struct HistoryDetailView: View {
     @State private var copiedImage = false
     @State private var copyResetTask: Task<Void, Never>?
     @State private var isZoomed = false
-    @State private var speechSynthesizer = AVSpeechSynthesizer()
+    @ObservedObject private var ttsManager = TTSManager.shared
 
     private var record: SnapshotRecord { entry.record }
     private var translating: Bool { model.isTranslating(entry.id) }
@@ -590,14 +590,27 @@ struct HistoryDetailView: View {
 
                 if hasAnyTranslation {
                     Button {
-                        speakAll()
+                        if ttsManager.isPlaying {
+                            ttsManager.stop()
+                        } else {
+                            speakAll()
+                        }
                     } label: {
-                        Label("Speak", systemImage: "speaker.wave.2")
-                            .font(.system(size: 11))
+                        if ttsManager.isPlaying {
+                            Label("Stop", systemImage: "square.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.red)
+                        } else if ttsManager.isLoading {
+                            ProgressView()
+                                .controlSize(.mini)
+                        } else {
+                            Label("Speak", systemImage: "speaker.wave.2")
+                                .font(.system(size: 11))
+                        }
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .help("Pronounce translated text aloud (Text-to-Speech)")
+                    .help(ttsManager.isPlaying ? "Stop pronunciation playback" : "Pronounce translated text aloud (Text-to-Speech)")
 
                     Button {
                         copyAll()
@@ -902,11 +915,11 @@ struct HistoryDetailView: View {
     private func speak(_ text: String) {
         let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !clean.isEmpty else { return }
-        if speechSynthesizer.isSpeaking {
-            speechSynthesizer.stopSpeaking(at: .immediate)
-        }
-        let utterance = AVSpeechUtterance(string: clean)
-        speechSynthesizer.speak(utterance)
+        let settings = SettingsStore()
+        let targetLang = record.targetLanguage.flatMap { code in
+            AppLanguage.allCases.first(where: { $0.rawValue == code || $0.promptName == code })
+        } ?? settings.targetLanguage
+        ttsManager.speak(text: clean, language: targetLang, engine: settings.ttsEngine, rate: settings.ttsRate)
     }
 
     private func copyImage(_ image: NSImage) {

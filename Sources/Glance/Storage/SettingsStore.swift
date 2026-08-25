@@ -58,6 +58,12 @@ final class SettingsStore: ObservableObject {
     @Published var automaticallyCheckForUpdates: Bool {
         didSet { persist() }
     }
+    @Published var ttsEngine: TTSEngine {
+        didSet { persist() }
+    }
+    @Published var ttsRate: Double {
+        didSet { persist() }
+    }
 
     // MARK: - Dependencies
 
@@ -90,6 +96,8 @@ final class SettingsStore: ObservableObject {
             playNotificationSound = loaded.playNotificationSound ?? true
             autoCopyToClipboard = loaded.autoCopyToClipboard ?? false
             automaticallyCheckForUpdates = loaded.automaticallyCheckForUpdates ?? true
+            ttsEngine = loaded.ttsEngine ?? .edgeNeural
+            ttsRate = loaded.ttsRate ?? 1.0
         } else {
             endpoints = []
             defaultEndpointID = nil
@@ -108,6 +116,8 @@ final class SettingsStore: ObservableObject {
             playNotificationSound = true
             autoCopyToClipboard = false
             automaticallyCheckForUpdates = true
+            ttsEngine = .edgeNeural
+            ttsRate = 1.0
         }
     }
 
@@ -129,6 +139,8 @@ final class SettingsStore: ObservableObject {
         var playNotificationSound: Bool? = true
         var autoCopyToClipboard: Bool? = false
         var automaticallyCheckForUpdates: Bool? = true
+        var ttsEngine: TTSEngine? = .edgeNeural
+        var ttsRate: Double? = 1.0
 
         init(endpoints: [EndpointConfig],
              defaultEndpointID: UUID?,
@@ -146,7 +158,9 @@ final class SettingsStore: ObservableObject {
              enableNotifications: Bool = true,
              playNotificationSound: Bool = true,
              autoCopyToClipboard: Bool = false,
-             automaticallyCheckForUpdates: Bool = true) {
+             automaticallyCheckForUpdates: Bool = true,
+             ttsEngine: TTSEngine = .edgeNeural,
+             ttsRate: Double = 1.0) {
             self.endpoints = endpoints
             self.defaultEndpointID = defaultEndpointID
             self.activeEndpointID = activeEndpointID
@@ -164,6 +178,8 @@ final class SettingsStore: ObservableObject {
             self.playNotificationSound = playNotificationSound
             self.autoCopyToClipboard = autoCopyToClipboard
             self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
+            self.ttsEngine = ttsEngine
+            self.ttsRate = ttsRate
         }
 
         /// Backward-compatible decode (M1.3+): blobs written before new
@@ -187,6 +203,8 @@ final class SettingsStore: ObservableObject {
             playNotificationSound = try container.decodeIfPresent(Bool.self, forKey: .playNotificationSound) ?? true
             autoCopyToClipboard = try container.decodeIfPresent(Bool.self, forKey: .autoCopyToClipboard) ?? false
             automaticallyCheckForUpdates = try container.decodeIfPresent(Bool.self, forKey: .automaticallyCheckForUpdates) ?? true
+            ttsEngine = try container.decodeIfPresent(TTSEngine.self, forKey: .ttsEngine) ?? .edgeNeural
+            ttsRate = try container.decodeIfPresent(Double.self, forKey: .ttsRate) ?? 1.0
         }
     }
 
@@ -211,7 +229,9 @@ final class SettingsStore: ObservableObject {
             enableNotifications: enableNotifications,
             playNotificationSound: playNotificationSound,
             autoCopyToClipboard: autoCopyToClipboard,
-            automaticallyCheckForUpdates: automaticallyCheckForUpdates
+            automaticallyCheckForUpdates: automaticallyCheckForUpdates,
+            ttsEngine: ttsEngine,
+            ttsRate: ttsRate
         )
         if let data = try? JSONEncoder().encode(blob) {
             defaults.set(data, forKey: Self.storageKey)
