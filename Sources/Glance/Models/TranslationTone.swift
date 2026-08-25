@@ -36,7 +36,7 @@ enum TranslationTone: String, CaseIterable, Codable, Identifiable {
         case .technical: return "Preserves code, API names & engineering specs"
         case .casual: return "Colloquial chat, slang & localized idiom"
         case .concise: return "Distills essential core meaning in minimal words"
-        case .furigana: return "Annotates Kanji with hiragana readings [振りがな] & translations"
+        case .furigana: return "Annotates Kanji in source text with [振りがな] readings"
         case .explanatory: return "Translates with key vocab & grammar nuance notes"
         case .polite: return "Formal business courtesy & honorific register"
         case .imaginative: return "Vivid imagery, rich metaphors & storytelling flair"
@@ -56,7 +56,7 @@ enum TranslationTone: String, CaseIterable, Codable, Identifiable {
         case .concise:
             return "Best for quick glance overviews and fast reading. Strips conversational filler and delivers the essential factual message in minimal words."
         case .furigana:
-            return "Best for Japanese comprehension and Kanji learning. Translates accurately while marking every Kanji with its bracketed hiragana reading (e.g. 漢字[かんじ]) alongside clear pronunciation and vocabulary notes."
+            return "Best for reading Japanese and learning Kanji. Annotates all Kanji in the original source text with bracketed hiragana readings (e.g. 漢字[かんじ]), while keeping the translation clean and natural."
         case .explanatory:
             return "Best for language learning and study. Translates the full text and provides helpful context notes explaining key vocabulary and idioms."
         case .polite:
@@ -80,7 +80,7 @@ enum TranslationTone: String, CaseIterable, Codable, Identifiable {
         case .concise:
             return "Translate with maximum conciseness. Strip conversational filler and boilerplate; deliver the core factual message directly in minimal words."
         case .furigana:
-            return "Translate accurately into the target language. When handling Japanese text, annotate all Kanji characters with their hiragana furigana pronunciation reading in brackets immediately following each kanji compound (format: 漢字[かんじ] or 食べる[たべる]). Provide the meaning and helpful pronunciation breakdown so the user can easily read and learn the Kanji."
+            return "For the 'source' field: transcribe the original Japanese text with furigana attached directly to all Kanji (format: 漢字[かんじ] or 更[さら]に). For the 'translation' field: provide ONLY the clean translation in the target language. Example: {\"source\": \"更[さら]に足跡[あしあと]が残[のこ]る\", \"translation\": \"Furthermore, footprints remain\"}. Never put bracketed Japanese readings into the translation field."
         case .explanatory:
             return "Translate fluently, then provide brief parenthetical or bulleted explanations for key technical terms, idioms, or grammar nuances."
         case .polite:
