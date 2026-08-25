@@ -13,7 +13,7 @@ ARCH_FLAGS=("--arch" "arm64" "--arch" "x86_64")
 
 # --disable-sandbox: some managed/agent environments forbid nested sandbox-exec;
 # on a normal Mac this only skips SwiftPM's manifest-compile sandbox (harmless).
-echo "Building Universal 2 binary (arm64 + x86_64) [$CONFIG]..."
+echo "Building Universal binary (arm64 + x86_64) [$CONFIG]..."
 swift build -c "$CONFIG" "${ARCH_FLAGS[@]}" --disable-sandbox
 BIN_PATH="$(swift build -c "$CONFIG" "${ARCH_FLAGS[@]}" --show-bin-path)"
 
