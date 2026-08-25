@@ -18,6 +18,7 @@ struct VersionPillView: View {
                         .scaleEffect(0.7)
                     Text("Checking…")
                         .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .lineLimit(1)
 
                 case .updateAvailable(let release):
                     Circle()
@@ -28,6 +29,7 @@ struct VersionPillView: View {
                     Text("v\(release.versionString) ↗")
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .foregroundStyle(.indigo)
+                        .lineLimit(1)
 
                 case .downloading(let progress, _, _):
                     Image(systemName: "arrow.down.circle.fill")
@@ -37,6 +39,7 @@ struct VersionPillView: View {
                     Text("\(Int(progress * 100))%")
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .foregroundStyle(.indigo)
+                        .lineLimit(1)
 
                 case .readyToInstall:
                     Image(systemName: "sparkles")
@@ -46,6 +49,7 @@ struct VersionPillView: View {
                     Text("Ready ↗")
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .foregroundStyle(.green)
+                        .lineLimit(1)
 
                 case .upToDate:
                     HStack(spacing: 4) {
@@ -55,19 +59,24 @@ struct VersionPillView: View {
                         Text("v\(updateManager.currentVersion)")
                             .font(.system(size: 10, weight: .semibold, design: .monospaced))
                             .foregroundStyle(.green)
+                            .lineLimit(1)
                     }
 
                 case .idle, .error, .installing:
                     Text("v\(updateManager.currentVersion)")
                         .font(.system(size: 10, weight: .semibold, design: .monospaced))
                         .foregroundStyle(isHovered ? .primary : .secondary)
+                        .lineLimit(1)
                 }
             }
+            .lineLimit(1)
             .padding(.horizontal, 7)
             .padding(.vertical, 2.5)
             .background(backgroundView)
         }
         .buttonStyle(.plain)
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
         .onHover { isHovered = $0 }
         .help(tooltipText)
     }

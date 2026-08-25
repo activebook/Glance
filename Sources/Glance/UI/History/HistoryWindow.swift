@@ -186,22 +186,25 @@ struct HistoryView: View {
         VStack(spacing: 0) {
             // Header: Glance brand + item count + sort menu
             HStack(spacing: 8) {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     if let appIcon = NSApp.applicationIconImage ?? NSImage(named: NSImage.applicationIconName) {
                         Image(nsImage: appIcon)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 32, height: 32)
+                            .frame(width: 28, height: 28)
                     }
 
                     Text("Glance")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
 
                     VersionPillView()
                 }
+                .layoutPriority(1)
 
-                Spacer()
+                Spacer(minLength: 4)
 
                 Menu {
                     Button {
@@ -314,7 +317,7 @@ struct HistoryView: View {
                     .foregroundStyle(.secondary)
                 Spacer()
                 if !model.entries.isEmpty {
-                    Text("⌥ + Space to capture")
+                    Text("\(model.settings.hotkey.displayString) to capture")
                         .font(.system(size: 10))
                         .foregroundStyle(.tertiary)
                 }
