@@ -82,6 +82,23 @@ final class LLMClientTranslateTests: XCTestCase {
         let payload = #"{"choices":[{"message":{"content":"{\"items\":[]}"}}]}"#
         XCTAssertEqual(LLMClient.assistantContent(from: Data(payload.utf8)), #"{"items":[]}"#)
     }
+
+    func test_buildRequest_interpolatesFuriganaToneDirective() throws {
+        let request = try LLMClient.buildTranslateRequest(
+            baseURL: baseURL,
+            apiKey: "sk-test",
+            model: "vision-model",
+            pngBase64: "QUJD",
+            targetLanguage: .japanese,
+            tone: .furigana
+        )
+        let body = try XCTUnwrap(request.httpBody)
+        let object = try XCTUnwrap(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        let messages = try XCTUnwrap(object["messages"] as? [[String: Any]])
+        let content = try XCTUnwrap(messages[0]["content"] as? [[String: Any]])
+        let text = try XCTUnwrap(content[0]["text"] as? String)
+        XCTAssertTrue(text.contains("furigana"))
+    }
 }
 
 final class ImageDownscalerTests: XCTestCase {
