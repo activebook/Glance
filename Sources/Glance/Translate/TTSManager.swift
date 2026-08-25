@@ -116,14 +116,15 @@ final class TTSManager: NSObject, ObservableObject, AVAudioPlayerDelegate, AVSpe
                         self.audioPlayer?.play()
                         self.isLoading = false
                         self.isPlaying = true
+                        NSLog("[Glance TTS] Playing Edge Neural audio (%ld bytes, voice: %@)", mp3Data.count, voice)
                     } catch {
-                        // Fallback to native synthesizer if audio playback fails
+                        NSLog("[Glance TTS] AVAudioPlayer error: %@, falling back to native", error.localizedDescription)
                         self.speakWithNativeSynthesizer(text: text, language: language, rate: rate)
                     }
                 }
             } catch {
                 guard !Task.isCancelled else { return }
-                // Fallback to native synthesizer on network / WebSocket failure
+                NSLog("[Glance TTS] Edge Neural error: %@, falling back to native", error.localizedDescription)
                 await MainActor.run {
                     self.speakWithNativeSynthesizer(text: text, language: language, rate: rate)
                 }
