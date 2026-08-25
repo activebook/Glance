@@ -125,6 +125,7 @@ extension SnapshotRecord.Status {
 
 struct HistoryView: View {
     @ObservedObject var model: HistoryModel
+    @ObservedObject private var updateManager = UpdateManager.shared
     var onShowSettings: (() -> Void)? = nil
 
     var body: some View {
@@ -157,6 +158,9 @@ struct HistoryView: View {
         .sheet(isPresented: $model.showDeleteRangeSheet) {
             DeleteByDateSheet(model: model)
         }
+        .sheet(isPresented: $updateManager.showUpdateModal) {
+            UpdateModalView()
+        }
         .onAppear { model.reload() }
         .confirmationDialog(
             "Delete “\(model.pendingDelete?.record.translatedText.prefix(30) ?? "snapshot")…”?",
@@ -182,25 +186,19 @@ struct HistoryView: View {
         VStack(spacing: 0) {
             // Header: Glance brand + item count + sort menu
             HStack(spacing: 8) {
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     if let appIcon = NSApp.applicationIconImage ?? NSImage(named: NSImage.applicationIconName) {
                         Image(nsImage: appIcon)
                             .resizable()
-                            .frame(width: 18, height: 18)
-                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                            .shadow(color: .black.opacity(0.12), radius: 1, y: 0.5)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 32, height: 32)
                     }
 
                     Text("Glance")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(.primary)
 
-                    Text("\(model.entries.count)")
-                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 1.5)
-                        .background(Capsule().fill(Color.primary.opacity(0.08)))
-                        .foregroundStyle(.secondary)
+                    VersionPillView()
                 }
 
                 Spacer()
@@ -307,6 +305,23 @@ struct HistoryView: View {
                 }
                 .listStyle(.sidebar)
             }
+
+            Divider()
+
+            HStack {
+                Text(model.entries.count == 1 ? "1 Snapshot" : "\(model.entries.count) Snapshots")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if !model.entries.isEmpty {
+                    Text("⌥ + Space to capture")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(Color(nsColor: .windowBackgroundColor).opacity(0.5))
         }
     }
 

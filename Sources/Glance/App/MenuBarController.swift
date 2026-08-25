@@ -261,7 +261,16 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
 
-        // 5. Settings & Quit
+        // 5. Settings, Updates & Quit
+        let checkUpdatesItem = NSMenuItem(
+            title: "Check for Updates…",
+            action: #selector(checkForUpdatesAction),
+            keyEquivalent: "u"
+        )
+        checkUpdatesItem.target = self
+        checkUpdatesItem.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: nil)
+        menu.addItem(checkUpdatesItem)
+
         let settingsItem = NSMenuItem(
             title: "Settings…",
             action: #selector(openSettingsAction),
@@ -281,6 +290,12 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     }
 
     // MARK: - Actions
+
+    @objc private func checkForUpdatesAction() {
+        Task { @MainActor in
+            await UpdateManager.shared.checkForUpdates(silent: false)
+        }
+    }
 
     @objc private func triggerCaptureAction() {
         onTriggerCapture?()
