@@ -77,16 +77,22 @@ PLIST
 # etc.) survive rebuilds. Ad-hoc changes the cdhash every build and silently
 # invalidates permissions.
 SIGN_IDENTITY="${SIGN_IDENTITY:-GlanceDev}"
-if ! security find-identity -v -p codesigning 2>/dev/null | grep -q "$SIGN_IDENTITY"; then
-    if [ -f "scripts/make_cert.sh" ]; then
-        echo "Creating stable self-signed identity '$SIGN_IDENTITY'..."
-        bash scripts/make_cert.sh || true
+if [ -z "${CI:-}" ]; then
+    if ! security find-identity -v -p codesigning 2>/dev/null | grep -q "$SIGN_IDENTITY"; then
+        if [ -f "scripts/make_cert.sh" ]; then
+            echo "Creating stable self-signed identity '$SIGN_IDENTITY'..."
+            bash scripts/make_cert.sh || true
+        fi
     fi
 fi
 
 if security find-identity -v -p codesigning 2>/dev/null | grep -q "$SIGN_IDENTITY"; then
-    codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_DIR"
-    echo "Signed with stable identity: $SIGN_IDENTITY"
+    if codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_DIR" 2>/dev/null; then
+        echo "Signed with stable identity: $SIGN_IDENTITY"
+    else
+        codesign --force --deep --sign - "$APP_DIR"
+        echo "Signed ad-hoc (fallback)"
+    fi
 else
     codesign --force --deep --sign - "$APP_DIR"
     echo "Signed ad-hoc"
