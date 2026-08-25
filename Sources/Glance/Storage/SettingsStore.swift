@@ -94,7 +94,7 @@ final class SettingsStore: ObservableObject {
             endpoints = []
             defaultEndpointID = nil
             activeEndpointID = nil
-            targetLanguage = .simplifiedChinese
+            targetLanguage = .english
             translationTone = .natural
             hudAppearanceStyle = .translucentDark
             hudOpacity = 0.85
@@ -115,7 +115,7 @@ final class SettingsStore: ObservableObject {
         var endpoints: [EndpointConfig] = []
         var defaultEndpointID: UUID?
         var activeEndpointID: UUID?
-        var targetLanguage: AppLanguage = .simplifiedChinese
+        var targetLanguage: AppLanguage = .english
         var translationTone: TranslationTone? = .natural
         var hudAppearanceStyle: HUDAppearanceStyle? = .translucentDark
         var hudOpacity: Double? = 0.85
@@ -173,7 +173,7 @@ final class SettingsStore: ObservableObject {
             endpoints = try container.decodeIfPresent([EndpointConfig].self, forKey: .endpoints) ?? []
             defaultEndpointID = try container.decodeIfPresent(UUID.self, forKey: .defaultEndpointID)
             activeEndpointID = try container.decodeIfPresent(UUID.self, forKey: .activeEndpointID)
-            targetLanguage = try container.decodeIfPresent(AppLanguage.self, forKey: .targetLanguage) ?? .simplifiedChinese
+            targetLanguage = try container.decodeIfPresent(AppLanguage.self, forKey: .targetLanguage) ?? .english
             translationTone = try container.decodeIfPresent(TranslationTone.self, forKey: .translationTone) ?? .natural
             hudAppearanceStyle = try container.decodeIfPresent(HUDAppearanceStyle.self, forKey: .hudAppearanceStyle) ?? .translucentDark
             hudOpacity = try container.decodeIfPresent(Double.self, forKey: .hudOpacity) ?? 0.85

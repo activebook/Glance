@@ -33,7 +33,7 @@ final class SettingsStoreTests: XCTestCase {
         let store = makeStore()
         XCTAssertTrue(store.endpoints.isEmpty)
         XCTAssertNil(store.defaultEndpointID)
-        XCTAssertEqual(store.targetLanguage, .simplifiedChinese)
+        XCTAssertEqual(store.targetLanguage, .english)
         XCTAssertEqual(store.resultPanelTimeout, 10)
         XCTAssertNil(store.activeEndpoint())
     }

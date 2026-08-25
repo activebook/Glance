@@ -254,13 +254,14 @@ struct HistoryView: View {
             .padding(.bottom, 6)
 
             // Status segmented filter
-            Picker("Filter", selection: $model.statusFilter) {
+            Picker("", selection: $model.statusFilter) {
                 Text("All").tag(SnapshotRecord.Status?.none)
                 ForEach([SnapshotRecord.Status.ok, .failed, .empty, .pending], id: \.self) { status in
                     Text(status.label).tag(SnapshotRecord.Status?.some(status))
                 }
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
             .padding(.horizontal, 10)
             .padding(.bottom, 8)
             .help("Filter snapshots by status (All, Translated, Failed, Empty, Pending)")

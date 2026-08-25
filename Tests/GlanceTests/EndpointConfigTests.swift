@@ -51,4 +51,16 @@ final class EndpointConfigTests: XCTestCase {
         let decoded = try JSONDecoder().decode(EndpointConfig.self, from: data)
         XCTAssertEqual(decoded, original)
     }
+
+    func test_exampleDefaults_isValid() {
+        let endpoint = EndpointConfig(
+            label: EndpointConfig.exampleLabel,
+            baseURL: EndpointConfig.exampleBaseURL,
+            model: EndpointConfig.exampleModel
+        )
+        XCTAssertTrue(endpoint.validate().isEmpty)
+        XCTAssertEqual(EndpointConfig.exampleLabel, "gemini-flash-lite")
+        XCTAssertEqual(EndpointConfig.exampleModel, "gemini-flash-lite-latest")
+        XCTAssertEqual(EndpointConfig.exampleBaseURL.absoluteString, "https://generativelanguage.googleapis.com/v1beta/openai/")
+    }
 }

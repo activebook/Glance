@@ -61,7 +61,7 @@ struct EndpointConfig: Identifiable, Codable, Equatable, Hashable {
 
     /// Real default values used when creating a NEW endpoint (shown as actual
     /// editable field content, not placeholder text — per M1.2).
-    static let exampleLabel = "混元 fast"
-    static let exampleBaseURL = URL(string: "https://api.example.com/v1")!
-    static let exampleModel = "hunyuan-vision"
+    static let exampleLabel = "gemini-flash-lite"
+    static let exampleBaseURL = URL(string: "https://generativelanguage.googleapis.com/v1beta/openai/")!
+    static let exampleModel = "gemini-flash-lite-latest"
 }
