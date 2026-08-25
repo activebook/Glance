@@ -55,6 +55,9 @@ final class SettingsStore: ObservableObject {
     @Published var autoCopyToClipboard: Bool {
         didSet { persist() }
     }
+    @Published var automaticallyCheckForUpdates: Bool {
+        didSet { persist() }
+    }
 
     // MARK: - Dependencies
 
@@ -86,6 +89,7 @@ final class SettingsStore: ObservableObject {
             enableNotifications = loaded.enableNotifications ?? true
             playNotificationSound = loaded.playNotificationSound ?? true
             autoCopyToClipboard = loaded.autoCopyToClipboard ?? false
+            automaticallyCheckForUpdates = loaded.automaticallyCheckForUpdates ?? true
         } else {
             endpoints = []
             defaultEndpointID = nil
@@ -103,6 +107,7 @@ final class SettingsStore: ObservableObject {
             enableNotifications = true
             playNotificationSound = true
             autoCopyToClipboard = false
+            automaticallyCheckForUpdates = true
         }
     }
 
@@ -123,6 +128,7 @@ final class SettingsStore: ObservableObject {
         var enableNotifications: Bool? = true
         var playNotificationSound: Bool? = true
         var autoCopyToClipboard: Bool? = false
+        var automaticallyCheckForUpdates: Bool? = true
 
         init(endpoints: [EndpointConfig],
              defaultEndpointID: UUID?,
@@ -139,7 +145,8 @@ final class SettingsStore: ObservableObject {
              hotkey: HotkeyCombo?,
              enableNotifications: Bool = true,
              playNotificationSound: Bool = true,
-             autoCopyToClipboard: Bool = false) {
+             autoCopyToClipboard: Bool = false,
+             automaticallyCheckForUpdates: Bool = true) {
             self.endpoints = endpoints
             self.defaultEndpointID = defaultEndpointID
             self.activeEndpointID = activeEndpointID
@@ -156,6 +163,7 @@ final class SettingsStore: ObservableObject {
             self.enableNotifications = enableNotifications
             self.playNotificationSound = playNotificationSound
             self.autoCopyToClipboard = autoCopyToClipboard
+            self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
         }
 
         /// Backward-compatible decode (M1.3+): blobs written before new
@@ -178,6 +186,7 @@ final class SettingsStore: ObservableObject {
             enableNotifications = try container.decodeIfPresent(Bool.self, forKey: .enableNotifications) ?? true
             playNotificationSound = try container.decodeIfPresent(Bool.self, forKey: .playNotificationSound) ?? true
             autoCopyToClipboard = try container.decodeIfPresent(Bool.self, forKey: .autoCopyToClipboard) ?? false
+            automaticallyCheckForUpdates = try container.decodeIfPresent(Bool.self, forKey: .automaticallyCheckForUpdates) ?? true
         }
     }
 
@@ -201,7 +210,8 @@ final class SettingsStore: ObservableObject {
             hotkey: hotkey,
             enableNotifications: enableNotifications,
             playNotificationSound: playNotificationSound,
-            autoCopyToClipboard: autoCopyToClipboard
+            autoCopyToClipboard: autoCopyToClipboard,
+            automaticallyCheckForUpdates: automaticallyCheckForUpdates
         )
         if let data = try? JSONEncoder().encode(blob) {
             defaults.set(data, forKey: Self.storageKey)

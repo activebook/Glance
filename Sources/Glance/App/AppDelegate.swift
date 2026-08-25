@@ -38,6 +38,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Launch directly with the Glance Main Window front and center
         showHistory()
+
+        // Automatically check for updates in the background if enabled
+        if settings.automaticallyCheckForUpdates {
+            Task {
+                await UpdateManager.shared.checkForUpdates(silent: true)
+            }
+        }
     }
 
     // MARK: - Capture
