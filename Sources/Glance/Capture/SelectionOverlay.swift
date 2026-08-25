@@ -95,6 +95,8 @@ final class SelectionOverlayView: NSView {
 
     private var windows: [DetectedWindow] = []
     private var hoveredWindow: DetectedWindow?
+    private var hasUserMovedMouse = false
+    private var initialMouseLocation: NSPoint?
 
     private var dragStart: NSPoint?
     private var dragCurrent: NSPoint?
@@ -125,15 +127,16 @@ final class SelectionOverlayView: NSView {
 
     func updateWindows(_ windows: [DetectedWindow]) {
         self.windows = windows
-        checkHover(at: NSEvent.mouseLocation)
     }
 
     func resetState() {
         dragStart = nil
         dragCurrent = nil
         isDragging = false
+        hoveredWindow = nil
+        hasUserMovedMouse = false
+        initialMouseLocation = NSEvent.mouseLocation
         window?.makeFirstResponder(self)
-        checkHover(at: NSEvent.mouseLocation)
         needsDisplay = true
     }
 
@@ -210,7 +213,7 @@ final class SelectionOverlayView: NSView {
             // MARK: - Freeform Drag Marquee
             drawHoleAndBorder(rect: rect, in: context)
             drawSizeBadge(for: rect, text: "\(Int(rect.width)) × \(Int(rect.height))")
-        } else if let win = hoveredWindow {
+        } else if hasUserMovedMouse, let win = hoveredWindow {
             // MARK: - Smart Window Snapping
             let localWinRect = localRect(forGlobalRect: win.bounds).intersection(bounds)
             if !localWinRect.isEmpty {
@@ -309,7 +312,20 @@ final class SelectionOverlayView: NSView {
     // MARK: - Mouse & Keyboard Events
 
     override func mouseMoved(with event: NSEvent) {
-        checkHover(at: NSEvent.mouseLocation)
+        let currentMouse = NSEvent.mouseLocation
+        if !hasUserMovedMouse {
+            if let initial = initialMouseLocation {
+                let dist = hypot(currentMouse.x - initial.x, currentMouse.y - initial.y)
+                if dist >= 3.0 {
+                    hasUserMovedMouse = true
+                }
+            } else {
+                hasUserMovedMouse = true
+            }
+        }
+        if hasUserMovedMouse {
+            checkHover(at: currentMouse)
+        }
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -321,6 +337,7 @@ final class SelectionOverlayView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
+        hasUserMovedMouse = true
         guard let start = dragStart else { return }
         let current = convert(event.locationInWindow, from: nil)
         dragCurrent = current
@@ -350,14 +367,12 @@ final class SelectionOverlayView: NSView {
             }
             let targetGlobalRect = globalRect(forLocalRect: localRect)
             controller?.finished(with: targetGlobalRect)
-        } else {
+        } else if hasUserMovedMouse, let win = hoveredWindow {
             // MARK: Complete Smart Window Snapping (Single Click)
-            if let win = hoveredWindow {
-                controller?.finished(with: win.bounds)
-            } else {
-                // Clicked bare desktop or unmapped area → cancel
-                controller?.finished(with: nil)
-            }
+            controller?.finished(with: win.bounds)
+        } else {
+            // Clicked bare desktop or unmapped area → cancel
+            controller?.finished(with: nil)
         }
     }
 
