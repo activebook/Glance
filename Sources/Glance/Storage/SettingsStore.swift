@@ -67,6 +67,9 @@ final class SettingsStore: ObservableObject {
     @Published var ttsRate: Double {
         didSet { persist() }
     }
+    @Published var historyLayoutMode: HistoryLayoutMode {
+        didSet { persist() }
+    }
 
     // MARK: - Dependencies
 
@@ -102,6 +105,7 @@ final class SettingsStore: ObservableObject {
             automaticallyCheckForUpdates = loaded.automaticallyCheckForUpdates ?? true
             ttsEngine = loaded.ttsEngine ?? .edgeNeural
             ttsRate = loaded.ttsRate ?? 1.0
+            historyLayoutMode = loaded.historyLayoutMode ?? .sidebar
         } else {
             endpoints = []
             defaultEndpointID = nil
@@ -123,6 +127,7 @@ final class SettingsStore: ObservableObject {
             automaticallyCheckForUpdates = true
             ttsEngine = .edgeNeural
             ttsRate = 1.0
+            historyLayoutMode = .sidebar
         }
     }
 
@@ -147,6 +152,7 @@ final class SettingsStore: ObservableObject {
         var automaticallyCheckForUpdates: Bool? = true
         var ttsEngine: TTSEngine? = .edgeNeural
         var ttsRate: Double? = 1.0
+        var historyLayoutMode: HistoryLayoutMode? = .sidebar
 
         init(endpoints: [EndpointConfig],
              defaultEndpointID: UUID?,
@@ -167,7 +173,8 @@ final class SettingsStore: ObservableObject {
              autoCopyToClipboard: Bool = false,
              automaticallyCheckForUpdates: Bool = true,
              ttsEngine: TTSEngine = .edgeNeural,
-             ttsRate: Double = 1.0) {
+             ttsRate: Double = 1.0,
+             historyLayoutMode: HistoryLayoutMode = .sidebar) {
             self.endpoints = endpoints
             self.defaultEndpointID = defaultEndpointID
             self.activeEndpointID = activeEndpointID
@@ -188,6 +195,7 @@ final class SettingsStore: ObservableObject {
             self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
             self.ttsEngine = ttsEngine
             self.ttsRate = ttsRate
+            self.historyLayoutMode = historyLayoutMode
         }
 
         /// Backward-compatible decode (M1.3+): blobs written before new
@@ -214,6 +222,7 @@ final class SettingsStore: ObservableObject {
             automaticallyCheckForUpdates = try container.decodeIfPresent(Bool.self, forKey: .automaticallyCheckForUpdates) ?? true
             ttsEngine = try container.decodeIfPresent(TTSEngine.self, forKey: .ttsEngine) ?? .edgeNeural
             ttsRate = try container.decodeIfPresent(Double.self, forKey: .ttsRate) ?? 1.0
+            historyLayoutMode = try container.decodeIfPresent(HistoryLayoutMode.self, forKey: .historyLayoutMode) ?? .sidebar
         }
     }
 
@@ -241,7 +250,8 @@ final class SettingsStore: ObservableObject {
             autoCopyToClipboard: autoCopyToClipboard,
             automaticallyCheckForUpdates: automaticallyCheckForUpdates,
             ttsEngine: ttsEngine,
-            ttsRate: ttsRate
+            ttsRate: ttsRate,
+            historyLayoutMode: historyLayoutMode
         )
         if let data = try? JSONEncoder().encode(blob) {
             defaults.set(data, forKey: Self.storageKey)

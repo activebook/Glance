@@ -24,9 +24,16 @@
 
 Whenever you encounter foreign languages, code snippets, scanned documents, video subtitles, or unselectable text, press a global shortcut and select the area. Glance delivers accurate, context-aware translations and audio pronunciations right beside your selection.
 
-<p align="center">
-  <img src="images/glance_main_window.png" width="640" alt="Glance Main Window & History Timeline" />
-</p>
+<table width="100%">
+  <tr>
+    <th width="50%" align="center"><strong>List View (⌘1)</strong></th>
+    <th width="50%" align="center"><strong>Gallery View (⌘2)</strong></th>
+  </tr>
+  <tr>
+    <td align="center"><img src="images/main_window_list.png" width="100%" alt="Glance Main Window — List View" /></td>
+    <td align="center"><img src="images/main_window_gallery.png" width="100%" alt="Glance Main Window — Gallery View" /></td>
+  </tr>
+</table>
 
 ---
 
@@ -63,6 +70,7 @@ Whenever you encounter foreign languages, code snippets, scanned documents, vide
   <img src="images/settings_appearance.png" width="540" alt="Glance Appearance & Customization Settings" />
 </p>
 
+- **Dual Browsing Layouts**: Instant switching between **List View (`⌘1`)** and Finder-style **Gallery View (`⌘2`)** with arrow key scrubbing (`←` / `→`).
 - **Glassmorphic Themes**: Translucent Dark, Frosted Glass, Deep Obsidian, and Vibrant Acrylic with opacity controls.
 - **Custom Typography**: Independent font sizing and color options for source and translated text.
 - **Searchable Timeline**: Full-text SQLite (FTS5) search, status badges, and dynamic **`↑ Top`** jump navigation (`⌘↑`).

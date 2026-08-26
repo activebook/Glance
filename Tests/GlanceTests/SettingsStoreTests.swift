@@ -163,4 +163,14 @@ final class SettingsStoreTests: XCTestCase {
         let second = makeStore()
         XCTAssertEqual(second.repeatHotkey, customRepeat)
     }
+
+    func test_historyLayoutMode_defaultsAndPersistence() {
+        let first = makeStore()
+        XCTAssertEqual(first.historyLayoutMode, .sidebar)
+
+        first.historyLayoutMode = .gallery
+
+        let second = makeStore()
+        XCTAssertEqual(second.historyLayoutMode, .gallery)
+    }
 }

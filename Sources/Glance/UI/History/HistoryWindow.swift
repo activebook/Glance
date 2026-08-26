@@ -6,13 +6,14 @@ import AVFoundation
 /// prominent translation, search, status filtering, and bulk date-range management.
 final class HistoryWindowController: NSWindowController, NSWindowDelegate {
     let model: HistoryModel
+    private var localKeyMonitor: Any?
+
     var onShowSettings: (() -> Void)? {
         didSet {
             // Re-bind to hosting view
             if let window = self.window {
                 window.contentView = NSHostingView(
                     rootView: HistoryView(model: model, onShowSettings: onShowSettings)
-                        .ignoresSafeArea(edges: .top)
                 )
             }
         }
@@ -24,7 +25,7 @@ final class HistoryWindowController: NSWindowController, NSWindowDelegate {
 
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1180, height: 760),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
@@ -36,7 +37,6 @@ final class HistoryWindowController: NSWindowController, NSWindowDelegate {
         window.toolbarStyle = .unified
         window.contentView = NSHostingView(
             rootView: HistoryView(model: model, onShowSettings: nil)
-                .ignoresSafeArea(edges: .top)
         )
         window.isReleasedWhenClosed = false
         window.setFrameAutosaveName("GlanceMainWindow")
@@ -46,6 +46,27 @@ final class HistoryWindowController: NSWindowController, NSWindowDelegate {
         super.init(window: window)
         window.delegate = self
 
+        // Monitor Left/Right Arrow keys in Gallery mode
+        localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self, let window = self.window, window.isKeyWindow else { return event }
+
+            // Skip if user is actively typing in a search field or text editor
+            if let firstResponder = window.firstResponder as? NSTextView, firstResponder.isFieldEditor {
+                return event
+            }
+
+            if self.model.settings.historyLayoutMode == .gallery {
+                if event.keyCode == 123 { // Left Arrow
+                    self.model.selectPrevious()
+                    return nil
+                } else if event.keyCode == 124 { // Right Arrow
+                    self.model.selectNext()
+                    return nil
+                }
+            }
+            return event
+        }
+
         // Restore maximized / zoomed state if previously zoomed
         if UserDefaults.standard.bool(forKey: "GlanceMainWindow_IsZoomed") {
             DispatchQueue.main.async { [weak window] in
@@ -53,6 +74,12 @@ final class HistoryWindowController: NSWindowController, NSWindowDelegate {
                     window.zoom(nil)
                 }
             }
+        }
+    }
+
+    deinit {
+        if let localKeyMonitor {
+            NSEvent.removeMonitor(localKeyMonitor)
         }
     }
 
@@ -127,8 +154,15 @@ extension SnapshotRecord.Status {
 
 struct HistoryView: View {
     @ObservedObject var model: HistoryModel
+    @ObservedObject var settings: SettingsStore
     @ObservedObject private var updateManager = UpdateManager.shared
     var onShowSettings: (() -> Void)? = nil
+
+    init(model: HistoryModel, onShowSettings: (() -> Void)? = nil) {
+        self.model = model
+        self.settings = model.settings
+        self.onShowSettings = onShowSettings
+    }
 
     @State private var listScrollProxy: ScrollViewProxy? = nil
 
@@ -146,55 +180,102 @@ struct HistoryView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
-            sidebar
-        } detail: {
-            detailPane
-        }
-        .navigationSplitViewStyle(.balanced)
-        .navigationSplitViewColumnWidth(min: 340, ideal: 400, max: 540)
-        .searchable(text: $model.searchQuery, placement: .toolbar, prompt: "Search translation or source text…")
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Button {
-                    model.showDeleteRangeSheet = true
-                } label: {
-                    Label("Delete by Date…", systemImage: "calendar.badge.minus")
+        layoutContainer
+            .searchable(text: $model.searchQuery, placement: .toolbar, prompt: "Search translation or source text…")
+            .toolbar {
+                ToolbarItem(placement: .automatic) {
+                    Picker("Layout Mode", selection: $settings.historyLayoutMode) {
+                        Label("List", systemImage: HistoryLayoutMode.sidebar.systemImage)
+                            .tag(HistoryLayoutMode.sidebar)
+                        Label("Gallery", systemImage: HistoryLayoutMode.gallery.systemImage)
+                            .tag(HistoryLayoutMode.gallery)
+                    }
+                    .pickerStyle(.segmented)
+                    .help("Switch layout mode: List (⌘1) or Gallery (⌘2)")
                 }
-                .help("Delete snapshots within a date range")
-            }
 
-            ToolbarItem(placement: .automatic) {
-                Button {
-                    onShowSettings?()
-                } label: {
-                    Label("Settings…", systemImage: "gearshape")
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        model.showDeleteRangeSheet = true
+                    } label: {
+                        Label("Delete by Date…", systemImage: "calendar.badge.minus")
+                    }
+                    .help("Delete snapshots within a date range")
                 }
-                .help("Open Glance Settings (⌘,)")
+
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        onShowSettings?()
+                    } label: {
+                        Label("Settings…", systemImage: "gearshape")
+                    }
+                    .help("Open Glance Settings (⌘,)")
+                }
             }
-        }
-        .sheet(isPresented: $model.showDeleteRangeSheet) {
-            DeleteByDateSheet(model: model)
-        }
-        .sheet(isPresented: $updateManager.showUpdateModal) {
-            UpdateModalView()
-        }
-        .onAppear { model.reload() }
-        .confirmationDialog(
-            "Delete “\(model.pendingDelete?.record.translatedText.prefix(30) ?? "snapshot")…”?",
-            isPresented: Binding(
-                get: { model.pendingDelete != nil },
-                set: { if !$0 { model.pendingDelete = nil } }
-            ),
-            titleVisibility: .visible
-        ) {
-            Button("Delete Snapshot", role: .destructive) {
-                if let entry = model.pendingDelete { model.requestDelete(entry) }
-                model.pendingDelete = nil
+            .background {
+                Group {
+                    Button("") {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            settings.historyLayoutMode = .sidebar
+                        }
+                    }
+                    .keyboardShortcut("1", modifiers: .command)
+
+                    Button("") {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            settings.historyLayoutMode = .gallery
+                        }
+                    }
+                    .keyboardShortcut("2", modifiers: .command)
+                }
+                .opacity(0)
+                .allowsHitTesting(false)
             }
-            Button("Cancel", role: .cancel) { model.pendingDelete = nil }
-        } message: {
-            Text("The image file will also be removed. This cannot be undone.")
+            .sheet(isPresented: $model.showDeleteRangeSheet) {
+                DeleteByDateSheet(model: model)
+            }
+            .sheet(isPresented: $updateManager.showUpdateModal) {
+                UpdateModalView()
+            }
+            .onAppear { model.reload() }
+            .confirmationDialog(
+                "Delete “\(model.pendingDelete?.record.translatedText.prefix(30) ?? "snapshot")…”?",
+                isPresented: Binding(
+                    get: { model.pendingDelete != nil },
+                    set: { if !$0 { model.pendingDelete = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button("Delete Snapshot", role: .destructive) {
+                    if let entry = model.pendingDelete { model.requestDelete(entry) }
+                    model.pendingDelete = nil
+                }
+                Button("Cancel", role: .cancel) { model.pendingDelete = nil }
+            } message: {
+                Text("The image file will also be removed. This cannot be undone.")
+            }
+    }
+
+    @ViewBuilder
+    private var layoutContainer: some View {
+        switch settings.historyLayoutMode {
+        case .sidebar:
+            NavigationSplitView {
+                sidebar
+            } detail: {
+                detailPane
+            }
+            .navigationSplitViewStyle(.balanced)
+            .navigationSplitViewColumnWidth(min: 340, ideal: 400, max: 540)
+        case .gallery:
+            VStack(spacing: 0) {
+                GalleryFilmstripView(model: model)
+                Rectangle()
+                    .fill(Color.primary.opacity(0.08))
+                    .frame(height: 1)
+                detailPane
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
     }
 

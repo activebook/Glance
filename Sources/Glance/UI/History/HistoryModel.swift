@@ -37,10 +37,41 @@ final class HistoryModel: ObservableObject {
                 self?.reload()
             }
             .store(in: &cancellables)
+
+        settings.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
     }
 
     var selectedEntry: HistoryEntry? {
         entries.first { $0.id == selectedID }
+    }
+
+    func selectPrevious() {
+        guard !entries.isEmpty else { return }
+        guard let currentID = selectedID,
+              let index = entries.firstIndex(where: { $0.id == currentID }) else {
+            selectedID = entries.first?.id
+            return
+        }
+        if index > 0 {
+            selectedID = entries[index - 1].id
+        }
+    }
+
+    func selectNext() {
+        guard !entries.isEmpty else { return }
+        guard let currentID = selectedID,
+              let index = entries.firstIndex(where: { $0.id == currentID }) else {
+            selectedID = entries.first?.id
+            return
+        }
+        if index + 1 < entries.count {
+            selectedID = entries[index + 1].id
+        }
     }
 
     func isTranslating(_ id: UUID) -> Bool {
