@@ -15,6 +15,7 @@ struct EndpointsTab: View {
     @State private var showUnsavedDialog = false
     @State private var showKey = false
     @State private var testState: TestState = .idle
+    @State private var hoveredPresetID: String?
 
     enum TestState: Equatable {
         case idle
@@ -47,37 +48,55 @@ struct EndpointsTab: View {
             id: "openai",
             name: "OpenAI",
             icon: "sparkles",
-            label: "OpenAI GPT-4o-mini",
+            label: "OpenAI (GPT-5.6 Luna)",
             baseURL: "https://api.openai.com/v1",
-            model: "gpt-4o-mini",
+            model: "gpt-5.6-luna",
+            requiresKey: true
+        ),
+        ProviderPreset(
+            id: "google",
+            name: "Google",
+            icon: "brain",
+            label: "Google Gemini Flash",
+            baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+            model: "gemini-flash-lite-latest",
             requiresKey: true
         ),
         ProviderPreset(
             id: "deepseek",
             name: "DeepSeek",
             icon: "bolt.fill",
-            label: "DeepSeek Chat",
+            label: "DeepSeek V4 Flash Vision",
             baseURL: "https://api.deepseek.com",
-            model: "deepseek-chat",
+            model: "deepseek-v4-flash-vision-exp",
             requiresKey: true
         ),
         ProviderPreset(
             id: "openrouter",
             name: "OpenRouter",
             icon: "globe",
-            label: "OpenRouter",
+            label: "OpenRouter (Qwen 3.8)",
             baseURL: "https://openrouter.ai/api/v1",
-            model: "google/gemini-2.5-flash",
+            model: "qwen/qwen3.8-27b",
             requiresKey: true
         ),
         ProviderPreset(
             id: "ollama",
-            name: "Ollama (Local)",
+            name: "Ollama",
             icon: "macmini",
-            label: "Ollama Local",
+            label: "Ollama (Local)",
             baseURL: "http://localhost:11434/v1",
             model: "llama3.2-vision",
             requiresKey: false
+        ),
+        ProviderPreset(
+            id: "custom",
+            name: "Custom",
+            icon: "slider.horizontal.3",
+            label: "Custom AI Service",
+            baseURL: "https://api.example.com/v1",
+            model: "custom-model",
+            requiresKey: true
         )
     ]
 
@@ -168,18 +187,18 @@ struct EndpointsTab: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             HStack(spacing: 14) {
                 Menu {
-                    Section("Quick Add Preset") {
+                    Section("Add AI Service") {
                         ForEach(presets) { preset in
                             Button {
                                 addPreset(preset)
                             } label: {
-                                Label(preset.name, systemImage: preset.icon)
+                                Label {
+                                    Text(preset.name)
+                                } icon: {
+                                    ProviderBrandIcon.image(for: preset.id, size: 14)
+                                }
                             }
                         }
-                    }
-                    Divider()
-                    Button("Custom AI Service…") {
-                        addEndpoint()
                     }
                 } label: {
                     Image(systemName: "plus")
@@ -214,7 +233,9 @@ struct EndpointsTab: View {
     }
 
     private func row(for endpoint: EndpointConfig) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
+            ProviderBrandIcon(providerID: detectProviderID(for: endpoint), size: 18)
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(endpoint.label.isEmpty ? "(unnamed)" : endpoint.label)
                     .font(.system(size: 13, weight: .medium))
@@ -232,7 +253,17 @@ struct EndpointsTab: View {
                     .help("Default AI Service")
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
+    }
+
+    private func detectProviderID(for endpoint: EndpointConfig) -> String {
+        let host = endpoint.baseURL.host?.lowercased() ?? ""
+        if host.contains("openai.com") { return "openai" }
+        if host.contains("googleapis.com") || host.contains("google") { return "google" }
+        if host.contains("deepseek.com") { return "deepseek" }
+        if host.contains("openrouter.ai") { return "openrouter" }
+        if host.contains("localhost") || host.contains("127.0.0.1") { return "ollama" }
+        return "custom"
     }
 
     private func hostDisplay(_ endpoint: EndpointConfig) -> String {
@@ -384,54 +415,84 @@ struct EndpointsTab: View {
         .animation(.easeOut(duration: 0.15), value: isDirty)
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "cpu")
-                .font(.system(size: 36))
-                .foregroundStyle(.tint)
+    // MARK: - Empty State (Onboarding Card Grid)
 
-            VStack(spacing: 4) {
-                Text(settings.endpoints.isEmpty ? "No AI Service Configured" : "No Service Selected")
-                    .font(.system(size: 15, weight: .semibold))
-                Text("Glance translates screen captures by connecting to OpenAI-compatible vision models.")
+    private var emptyState: some View {
+        VStack(spacing: 24) {
+            // Header
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(Color.accentColor.opacity(0.12))
+                        .frame(width: 52, height: 52)
+                    Image(systemName: "cpu.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color.accentColor)
+                }
+
+                Text(settings.endpoints.isEmpty ? "Connect an AI Service" : "No Service Selected")
+                    .font(.system(size: 17, weight: .bold))
+
+                Text("Choose an AI provider below to set up high-accuracy screen translation.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: 380)
             }
 
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Quick Add Provider Preset:")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
-
-                HStack(spacing: 10) {
-                    ForEach(presets) { preset in
-                        Button {
-                            addPreset(preset)
-                        } label: {
-                            VStack(spacing: 6) {
-                                Image(systemName: preset.icon)
-                                    .font(.system(size: 16))
-                                Text(preset.name)
-                                    .font(.system(size: 11, weight: .medium))
-                            }
-                            .frame(width: 80, height: 56)
-                        }
-                        .buttonStyle(.bordered)
-                    }
+            // 2 x 3 Card Grid
+            LazyVGrid(
+                columns: [
+                    GridItem(.fixed(136), spacing: 14),
+                    GridItem(.fixed(136), spacing: 14),
+                    GridItem(.fixed(136), spacing: 14)
+                ],
+                spacing: 14
+            ) {
+                ForEach(presets) { preset in
+                    presetCard(preset)
                 }
             }
-            .padding(.top, 4)
-
-            Button("Add Custom Service") { addEndpoint() }
-                .buttonStyle(.plain)
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(24)
+        .padding(32)
+    }
+
+    private func presetCard(_ preset: ProviderPreset) -> some View {
+        Button {
+            addPreset(preset)
+        } label: {
+            VStack(spacing: 7) {
+                ProviderBrandIcon(providerID: preset.id, size: 28)
+
+                Text(preset.name)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Text(preset.model)
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .frame(width: 136, height: 88)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(
+                        hoveredPresetID == preset.id ? Color.accentColor : Color(nsColor: .separatorColor).opacity(0.6),
+                        lineWidth: hoveredPresetID == preset.id ? 1.5 : 1
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.04), radius: 3, x: 0, y: 1)
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                hoveredPresetID = isHovered ? preset.id : nil
+            }
+        }
     }
 
     // MARK: - Draft lifecycle
