@@ -130,6 +130,21 @@ struct HistoryView: View {
     @ObservedObject private var updateManager = UpdateManager.shared
     var onShowSettings: (() -> Void)? = nil
 
+    @State private var listScrollProxy: ScrollViewProxy? = nil
+
+    private var isNotAtTop: Bool {
+        guard let firstID = model.entries.first?.id else { return false }
+        return model.selectedID != firstID
+    }
+
+    private func jumpToTop() {
+        guard let firstID = model.entries.first?.id else { return }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            listScrollProxy?.scrollTo(firstID, anchor: .top)
+        }
+        model.selectedID = firstID
+    }
+
     var body: some View {
         NavigationSplitView {
             sidebar
@@ -187,7 +202,7 @@ struct HistoryView: View {
 
     private var sidebar: some View {
         VStack(spacing: 0) {
-            // Header: Glance brand + item count + sort menu
+            // Header: Glance brand + sort menu
             HStack(spacing: 8) {
                 HStack(spacing: 6) {
                     if let appIcon = NSApp.applicationIconImage ?? NSImage(named: NSImage.applicationIconName) {
@@ -300,49 +315,82 @@ struct HistoryView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(selection: $model.selectedID) {
-                    ForEach(model.entries) { entry in
-                        sidebarRow(for: entry)
-                            .tag(entry.id)
-                            .contextMenu {
-                                Button("Copy Translation") {
-                                    NSPasteboard.general.clearContents()
-                                    NSPasteboard.general.setString(entry.record.translatedText, forType: .string)
-                                }
-                                if let image = entry.image {
-                                    Button("Copy Image") {
+                ScrollViewReader { proxy in
+                    List(selection: $model.selectedID) {
+                        ForEach(model.entries) { entry in
+                            sidebarRow(for: entry)
+                                .tag(entry.id)
+                                .id(entry.id)
+                                .contextMenu {
+                                    Button("Copy Translation") {
                                         NSPasteboard.general.clearContents()
-                                        NSPasteboard.general.writeObjects([image])
+                                        NSPasteboard.general.setString(entry.record.translatedText, forType: .string)
+                                    }
+                                    if let image = entry.image {
+                                        Button("Copy Image") {
+                                            NSPasteboard.general.clearContents()
+                                            NSPasteboard.general.writeObjects([image])
+                                        }
+                                    }
+                                    Button("Translate Again") { model.retranslate(entry) }
+                                        .disabled(model.isTranslating(entry.id))
+                                    Divider()
+                                    Button("Delete…", role: .destructive) {
+                                        model.pendingDelete = entry
                                     }
                                 }
-                                Button("Translate Again") { model.retranslate(entry) }
-                                    .disabled(model.isTranslating(entry.id))
-                                Divider()
-                                Button("Delete…", role: .destructive) {
-                                    model.pendingDelete = entry
-                                }
-                            }
+                        }
+                    }
+                    .listStyle(.sidebar)
+                    .scrollContentBackground(.hidden)
+                    .onAppear {
+                        listScrollProxy = proxy
                     }
                 }
-                .listStyle(.sidebar)
-                .scrollContentBackground(.hidden)
             }
 
             Rectangle()
                 .fill(Color.primary.opacity(0.06))
                 .frame(height: 1)
 
-            HStack {
+            // Footer Bar: Snapshot count + dynamic Top Jump / Capture Shortcut hint
+            HStack(spacing: 8) {
                 Text(model.entries.count == 1 ? "1 Snapshot" : "\(model.entries.count) Snapshots")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
+
                 Spacer()
-                if !model.entries.isEmpty {
+
+                if isNotAtTop {
+                    Button {
+                        jumpToTop()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "arrow.up.to.line")
+                                .font(.system(size: 9.5, weight: .bold))
+                            Text("Top")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2.5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                .fill(Color.accentColor.opacity(0.12))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut(.upArrow, modifiers: .command)
+                    .help("Jump to latest snapshot at the top (⌘↑)")
+                    .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                } else if !model.entries.isEmpty {
                     Text("\(model.settings.hotkey.displayString) to capture")
                         .font(.system(size: 10))
                         .foregroundStyle(.tertiary)
+                        .transition(.opacity)
                 }
             }
+            .animation(.easeInOut(duration: 0.18), value: isNotAtTop)
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
             .background(Color.clear)
@@ -370,7 +418,7 @@ struct HistoryView: View {
                 }
 
                 StatusDot(status: entry.record.status)
-                    .offset(x: 2, y: 2)
+                    .padding(5)
             }
             .frame(width: 96, height: 64)
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
