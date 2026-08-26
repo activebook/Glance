@@ -1,112 +1,29 @@
 import SwiftUI
 import ServiceManagement
 
-/// General settings: target translation language, tone, auto-dismiss timeout,
-/// delivery options, and launch-at-login.
+/// General system settings: delivery & notifications, startup behavior,
+/// and software updates.
 struct GeneralTab: View {
     @ObservedObject var settings: SettingsStore
     @ObservedObject var updateManager = UpdateManager.shared
-    @ObservedObject var ttsManager = TTSManager.shared
 
     var body: some View {
         Form {
-            Section("Translation") {
-                Picker("Target Language", selection: $settings.targetLanguage) {
-                    ForEach(AppLanguage.allCases) { language in
-                        Text(language.displayName).tag(language)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 5) {
-                    Picker("Tone & Style", selection: $settings.translationTone) {
-                        ForEach(TranslationTone.allCases) { tone in
-                            Text(tone.displayName).tag(tone)
-                        }
-                    }
-
-                    Text(settings.translationTone.useCase)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .lineSpacing(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 2)
-                        .animation(.easeInOut(duration: 0.15), value: settings.translationTone)
-                }
-
-                LabeledContent("Result panel auto-dismiss") {
-                    HStack(spacing: 8) {
-                        Text("\(Int(settings.resultPanelTimeout)) s")
-                            .font(.system(size: 13, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                        Stepper("", value: $settings.resultPanelTimeout, in: 5...30, step: 1)
-                            .labelsHidden()
-                    }
-                }
-            }
-
-            Section("Speech & Audio (TTS)") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Picker("Engine", selection: $settings.ttsEngine) {
-                        ForEach(TTSEngine.allCases) { engine in
-                            Text(engine.displayName).tag(engine)
-                        }
-                    }
-
-                    Text(settings.ttsEngine.subtitle)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 1)
-                }
-
-                LabeledContent("Speech Speed") {
-                    HStack(spacing: 10) {
-                        Slider(value: $settings.ttsRate, in: 0.5...1.5, step: 0.05)
-                            .frame(width: 140)
-
-                        Text(String(format: "%.2fx", settings.ttsRate))
-                            .font(.system(size: 12, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 45, alignment: .trailing)
-                    }
-                }
-
-                HStack {
-                    Text("Voice: \(TTSEngine.defaultVoice(for: settings.targetLanguage))")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
-
-                    Spacer()
-
-                    Button {
-                        if ttsManager.isPlaying {
-                            ttsManager.stop()
-                        } else {
-                            ttsManager.preview(engine: settings.ttsEngine, rate: settings.ttsRate, language: settings.targetLanguage)
-                        }
-                    } label: {
-                        if ttsManager.isPlaying {
-                            Label("Stop", systemImage: "square.fill")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.red)
-                        } else if ttsManager.isLoading {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Label("Preview Voice", systemImage: "speaker.wave.2.fill")
-                                .font(.system(size: 11))
-                        }
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help(ttsManager.isPlaying ? "Stop audio preview" : "Listen to sample pronunciation")
-                }
-            }
-
             Section("Delivery & Feedback") {
                 Toggle("Show system notification on completion", isOn: $settings.enableNotifications)
                 Toggle("Play sound on completion", isOn: $settings.playNotificationSound)
                     .disabled(!settings.enableNotifications)
                 Toggle("Automatically copy translation to clipboard", isOn: $settings.autoCopyToClipboard)
+            }
+
+            Section("Startup") {
+                Toggle("Launch Glance at login", isOn: Binding(
+                    get: { SMAppService.mainApp.status == .enabled },
+                    set: { enabled in setLoginItem(enabled: enabled) }
+                ))
+                Text("Requires the app bundle to stay at a stable path (e.g. /Applications/Glance.app).")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
             }
 
             Section("Software Updates") {
@@ -161,16 +78,6 @@ struct GeneralTab: View {
                 }
 
                 Toggle("Automatically check for updates on launch", isOn: $settings.automaticallyCheckForUpdates)
-            }
-
-            Section("Startup") {
-                Toggle("Launch Glance at login", isOn: Binding(
-                    get: { SMAppService.mainApp.status == .enabled },
-                    set: { enabled in setLoginItem(enabled: enabled) }
-                ))
-                Text("Requires the app bundle to stay at a stable path (e.g. /Applications/Glance.app).")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
             }
         }
         .formStyle(.grouped)

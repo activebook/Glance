@@ -31,14 +31,16 @@ struct SettingsRootView: View {
 
     var body: some View {
         TabView {
-            GeneralTab(settings: settings)
-                .tabItem { Label("General", systemImage: "gearshape") }
+            TranslationTab(settings: settings)
+                .tabItem { Label("Translation", systemImage: "character.bubble") }
             AppearanceTab(settings: settings)
                 .tabItem { Label("Appearance", systemImage: "paintbrush.fill") }
             EndpointsTab(settings: settings)
                 .tabItem { Label("Endpoints", systemImage: "network") }
             HotkeyTab(settings: settings)
                 .tabItem { Label("Hotkey", systemImage: "command.square") }
+            GeneralTab(settings: settings)
+                .tabItem { Label("General", systemImage: "gearshape") }
         }
         .frame(minWidth: 800, minHeight: 540)
     }
