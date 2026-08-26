@@ -20,61 +20,61 @@
 
 ## Overview
 
-Glance is an intelligent macOS companion designed for seamless reading, translation, and instant visual comprehension.
+**Glance** is a native macOS menu bar companion for frictionless on-screen translation, OCR, and language comprehension.
 
-Whenever you encounter foreign languages, complex technical articles, code snippets, scanned documents, comics, or unselectable text in any application, simply press a shortcut and draw a box over the region of interest. Glance immediately delivers accurate, context-aware translations and explanatory breakdowns directly adjacent to your selection.
+Whenever you encounter foreign languages, code snippets, scanned documents, video subtitles, or unselectable text, press a global shortcut and select the area. Glance delivers accurate, context-aware translations and audio pronunciations right beside your selection.
+
+<p align="center">
+  <img src="images/glance_main_window.png" width="640" alt="Glance Main Window & History Timeline" />
+</p>
 
 ---
 
 ## Features
 
-### Point-and-Understand Simplicity
-- **Snappy Screen Capture**: Trigger capture mode with a global hotkey, drag a selection box over any area, and release.
-- **Works Everywhere**: Translate text inside video streams, locked PDF documents, images, games, and applications where text selection is disabled.
+### Global Shortcuts & Instant Translation
 
-### Intelligent, Context-Aware Comprehension
-- **Semantic Understanding**: Interprets surrounding context, idioms, technical jargon, and formatting rather than performing mechanical word-for-word substitution.
-- **Multilingual Support**: Instant translation across primary languages and beyond:
-  - 🇺🇸 English
-  - 🇨🇳 简体中文 (Simplified Chinese)
-  - 🇭🇰 繁體中文 (Traditional Chinese)
-  - 🇯🇵 日本語 (Japanese)
-  - 🇰🇷 한국어 (Korean)
-  - 🇪🇸 Español (Spanish)
-  - 🇫🇷 Français (French)
-  - 🇩🇪 Deutsch (German)
+<p align="center">
+  <img src="images/settings_translation.png" width="540" alt="Glance Translation & Global Shortcuts Settings" />
+</p>
 
-### Adaptive Translation Styles
-Tailor the tone and depth of translations to your immediate workflow:
-- **Natural & Fluent**: Balanced, idiomatic everyday translation.
-- **Technical & Professional**: Preserves code syntax, API names, variable identifiers, and engineering specifications.
-- **Bilingual Explanatory**: Translates and provides breakdown notes on key vocabulary, idioms, and grammatical nuances.
-- **Casual & Conversational**: Tailored for social media, gaming chats, messaging, and localized colloquialisms.
-- **Polite & Honorific**: Formal business courtesy and respectful honorific register.
-- **Ultra-Concise Summary**: Distills extensive passages down to their essential factual meaning in minimal words.
-- **Imaginative & Creative**: Vivid imagery, rich metaphors, and creative storytelling flair.
-- **Sarcastic & Witty**: Sharp irony, humorous sarcasm, and witty cynicism while preserving core meaning.
+- **`⌥G` Capture & Translate**: Darkened overlay with freeform marquee drag or single-click smart window snapping.
+- **`⇧⌥G` Re-translate Last Area**: Zero-overlay instant re-capture — perfect for video subtitles, manga, and live streams.
+- **Adaptive Personas**: Natural & Fluent, Bilingual Explanatory, Japanese Furigana, Technical, Concise, and more.
+- **Neural TTS Audio**: Edge Neural voices with playback speed control and offline Apple voice fallback.
 
-### Non-Intrusive Floating HUD
-- **Contextual Placement**: Result cards appear directly beside your screen selection.
-- **Single-Click Copying**: Copy entire translations or individual segments with one click.
-- **Pinning & Organization**: Pin result cards above windows for active reference during research, writing, or development.
+---
 
-### Visual Snapshot History
-- **Persistent Timeline**: Every capture is automatically indexed in a searchable visual history log.
-- **Quick Review**: Re-examine past translations and inspect original snapshots at any time.
+### Multi-Provider AI Service Presets
 
-### Menu Bar Integration
-- Switch target languages, adjust translation personas, and manage AI endpoints directly from the native macOS status bar.
+<p align="center">
+  <img src="images/settings_ai_service.png" width="540" alt="Glance AI Service Provider Presets" />
+</p>
+
+- **1-Click Presets**: Pre-configured support for **OpenAI** (`gpt-5.6-luna`), **Google** (`gemini-flash-lite-latest`), **DeepSeek** (`deepseek-v4-flash-vision-exp`), **OpenRouter** (`qwen/qwen3.8-27b`), **Ollama** (`llama3.2-vision`), and custom OpenAI-compatible endpoints.
+- **Keychain Security**: End-to-end encrypted API key storage in macOS Keychain.
+- **Live Latency Diagnostics**: Instant connectivity and response time testing.
+
+---
+
+### Appearance & History Management
+
+<p align="center">
+  <img src="images/settings_appearance.png" width="540" alt="Glance Appearance & Customization Settings" />
+</p>
+
+- **Glassmorphic Themes**: Translucent Dark, Frosted Glass, Deep Obsidian, and Vibrant Acrylic with opacity controls.
+- **Custom Typography**: Independent font sizing and color options for source and translated text.
+- **Searchable Timeline**: Full-text SQLite (FTS5) search, status badges, and dynamic **`↑ Top`** jump navigation (`⌘↑`).
 
 ---
 
 ## Getting Started
 
 1. **Launch**: Glance resides quietly in the macOS menu bar.
-2. **Trigger**: Press the configured global hotkey from anywhere on macOS.
-3. **Select**: Drag a selection box across any window, document, or media.
-4. **Read & Copy**: Review and copy the formatted translation in-place.
+2. **Configure**: Select your AI provider under **Settings (`⌘,`) $\rightarrow$ AI Service**.
+3. **Translate**: Press **`⌥G`** to capture any area, or **`⇧⌥G`** to re-translate the previous selection.
+4. **Interact**: View the glass result HUD, copy segments, or listen via neural text-to-speech.
 
 ---
 
