@@ -27,8 +27,12 @@ final class CaptureCoordinator {
     private let settings: SettingsStore
     weak var resultPanel: ResultPanelController?
 
-    /// AppKit-global rect of the most recent capture — panel placement.
-    private var lastCaptureRect: CGRect = .zero
+    /// AppKit-global rect of the most recent capture — panel placement and repeat capture.
+    private(set) var lastCaptureRect: CGRect = .zero
+
+    var hasSavedRegion: Bool {
+        lastCaptureRect.width > 2 && lastCaptureRect.height > 2
+    }
 
     init(historyStore: HistoryStore, settings: SettingsStore) {
         self.historyStore = historyStore
@@ -44,7 +48,7 @@ final class CaptureCoordinator {
         }
     }
 
-    // MARK: - Entry point
+    // MARK: - Entry points
 
     func beginSelection() {
         guard state == .idle else { return }
@@ -59,13 +63,35 @@ final class CaptureCoordinator {
         overlay.begin(on: screen)
     }
 
+    /// Re-captures the exact same bounding box as the previous capture with zero overlay latency.
+    /// Falls back gracefully to standard interactive selection if no previous region exists.
+    func beginRepeatCapture() {
+        guard state == .idle else { return }
+
+        guard CGPreflightScreenCaptureAccess() else {
+            presentPermissionAlert()
+            return
+        }
+
+        guard hasSavedRegion else {
+            beginSelection()
+            return
+        }
+
+        performDirectCapture(globalRect: lastCaptureRect)
+    }
+
     // MARK: - Pipeline steps
 
     private func handleSelection(_ globalRect: CGRect) {
         guard state == .selecting else { return }
+        performDirectCapture(globalRect: globalRect)
+    }
+
+    private func performDirectCapture(globalRect: CGRect) {
         state = .capturing
 
-        // The overlay is already ordered out at this point (finished() → end()),
+        // The overlay is already ordered out at this point,
         // so a plain on-screen capture is correct and flicker-free.
         guard let captured = ScreenCaptureService.capture(globalRect: globalRect,
                                                           excludingWindowNumbers: []),

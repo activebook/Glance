@@ -46,6 +46,9 @@ final class SettingsStore: ObservableObject {
     @Published var hotkey: HotkeyCombo {
         didSet { persist() }
     }
+    @Published var repeatHotkey: HotkeyCombo {
+        didSet { persist() }
+    }
     @Published var enableNotifications: Bool {
         didSet { persist() }
     }
@@ -92,6 +95,7 @@ final class SettingsStore: ObservableObject {
             translatedTextColor = loaded.translatedTextColor ?? .primary
             resultPanelTimeout = loaded.resultPanelTimeout
             hotkey = loaded.hotkey ?? .default
+            repeatHotkey = loaded.repeatHotkey ?? .defaultRepeat
             enableNotifications = loaded.enableNotifications ?? true
             playNotificationSound = loaded.playNotificationSound ?? true
             autoCopyToClipboard = loaded.autoCopyToClipboard ?? false
@@ -112,6 +116,7 @@ final class SettingsStore: ObservableObject {
             translatedTextColor = .primary
             resultPanelTimeout = 10
             hotkey = .default
+            repeatHotkey = .defaultRepeat
             enableNotifications = true
             playNotificationSound = true
             autoCopyToClipboard = false
@@ -135,6 +140,7 @@ final class SettingsStore: ObservableObject {
         var translatedTextColor: ColorOption? = .primary
         var resultPanelTimeout: TimeInterval = 10
         var hotkey: HotkeyCombo?
+        var repeatHotkey: HotkeyCombo?
         var enableNotifications: Bool? = true
         var playNotificationSound: Bool? = true
         var autoCopyToClipboard: Bool? = false
@@ -155,6 +161,7 @@ final class SettingsStore: ObservableObject {
              translatedTextColor: ColorOption? = .primary,
              resultPanelTimeout: TimeInterval,
              hotkey: HotkeyCombo?,
+             repeatHotkey: HotkeyCombo? = .defaultRepeat,
              enableNotifications: Bool = true,
              playNotificationSound: Bool = true,
              autoCopyToClipboard: Bool = false,
@@ -174,6 +181,7 @@ final class SettingsStore: ObservableObject {
             self.translatedTextColor = translatedTextColor
             self.resultPanelTimeout = resultPanelTimeout
             self.hotkey = hotkey
+            self.repeatHotkey = repeatHotkey
             self.enableNotifications = enableNotifications
             self.playNotificationSound = playNotificationSound
             self.autoCopyToClipboard = autoCopyToClipboard
@@ -199,6 +207,7 @@ final class SettingsStore: ObservableObject {
             translatedTextColor = try container.decodeIfPresent(ColorOption.self, forKey: .translatedTextColor) ?? .primary
             resultPanelTimeout = try container.decodeIfPresent(TimeInterval.self, forKey: .resultPanelTimeout) ?? 10
             hotkey = try container.decodeIfPresent(HotkeyCombo.self, forKey: .hotkey)
+            repeatHotkey = try container.decodeIfPresent(HotkeyCombo.self, forKey: .repeatHotkey) ?? .defaultRepeat
             enableNotifications = try container.decodeIfPresent(Bool.self, forKey: .enableNotifications) ?? true
             playNotificationSound = try container.decodeIfPresent(Bool.self, forKey: .playNotificationSound) ?? true
             autoCopyToClipboard = try container.decodeIfPresent(Bool.self, forKey: .autoCopyToClipboard) ?? false
@@ -226,6 +235,7 @@ final class SettingsStore: ObservableObject {
             translatedTextColor: translatedTextColor,
             resultPanelTimeout: resultPanelTimeout,
             hotkey: hotkey,
+            repeatHotkey: repeatHotkey,
             enableNotifications: enableNotifications,
             playNotificationSound: playNotificationSound,
             autoCopyToClipboard: autoCopyToClipboard,

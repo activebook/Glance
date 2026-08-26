@@ -151,4 +151,16 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(second.translatedTextColor.hex, "#33FF57")
         XCTAssertEqual(second.translationTone, .imaginative)
     }
+
+    func test_repeatHotkey_defaultsAndPersistence() {
+        let first = makeStore()
+        XCTAssertEqual(first.repeatHotkey, .defaultRepeat)
+        XCTAssertEqual(HotkeyCombo.defaultRepeat.displayString, "⌥⇧G")
+
+        let customRepeat = HotkeyCombo(keyCode: UInt32(kVK_ANSI_R), carbonModifiers: UInt32(optionKey | controlKey))
+        first.repeatHotkey = customRepeat
+
+        let second = makeStore()
+        XCTAssertEqual(second.repeatHotkey, customRepeat)
+    }
 }

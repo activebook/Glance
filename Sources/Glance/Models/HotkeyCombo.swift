@@ -13,6 +13,12 @@ struct HotkeyCombo: Equatable, Codable {
         carbonModifiers: UInt32(optionKey)
     )
 
+    /// ⇧⌥G (Shift + Option + G) — default for Repeat Last Region Capture.
+    static let defaultRepeat = HotkeyCombo(
+        keyCode: UInt32(kVK_ANSI_G),
+        carbonModifiers: UInt32(optionKey | shiftKey)
+    )
+
     // MARK: - Conversion from NSEvent
 
     /// Returns the Carbon modifier mask for a key event, or nil when the combo

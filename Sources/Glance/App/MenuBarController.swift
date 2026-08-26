@@ -14,6 +14,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     var onShowSettings: (() -> Void)?
     var onShowHistory: (() -> Void)?
     var onTriggerCapture: (() -> Void)?
+    var onTriggerRepeatCapture: (() -> Void)?
 
     init(settings: SettingsStore, historyStore: HistoryStore? = nil) {
         self.settings = settings
@@ -43,11 +44,6 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
     /// Primary menu bar status icon: custom minimalist viewfinder frame enclosing the '文' character.
     static func makeMenuBarIcon() -> NSImage {
-        makeViewfinderWenIcon()
-    }
-
-    /// Generates the template NSImage for the 'Viewfinder + 文' menu bar item.
-    static func makeViewfinderWenIcon() -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let img = NSImage(size: size, flipped: false) { bounds in
             guard let ctx = NSGraphicsContext.current?.cgContext else { return false }
@@ -68,8 +64,9 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             // Top-Left Bracket
             let tl = CGMutablePath()
             tl.move(to: CGPoint(x: vfRect.minX, y: vfRect.maxY - bracketLen))
-            tl.addLine(to: CGPoint(x: vfRect.minX, y: vfRect.maxY - bracketRadius))
-            tl.addQuadCurve(to: CGPoint(x: vfRect.minX + bracketRadius, y: vfRect.maxY), control: CGPoint(x: vfRect.minX, y: vfRect.maxY))
+            tl.addArc(tangent1End: CGPoint(x: vfRect.minX, y: vfRect.maxY),
+                      tangent2End: CGPoint(x: vfRect.minX + bracketLen, y: vfRect.maxY),
+                      radius: bracketRadius)
             tl.addLine(to: CGPoint(x: vfRect.minX + bracketLen, y: vfRect.maxY))
             ctx.addPath(tl)
             ctx.strokePath()
@@ -77,8 +74,9 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             // Top-Right Bracket
             let tr = CGMutablePath()
             tr.move(to: CGPoint(x: vfRect.maxX - bracketLen, y: vfRect.maxY))
-            tr.addLine(to: CGPoint(x: vfRect.maxX - bracketRadius, y: vfRect.maxY))
-            tr.addQuadCurve(to: CGPoint(x: vfRect.maxX, y: vfRect.maxY - bracketRadius), control: CGPoint(x: vfRect.maxX, y: vfRect.maxY))
+            tr.addArc(tangent1End: CGPoint(x: vfRect.maxX, y: vfRect.maxY),
+                      tangent2End: CGPoint(x: vfRect.maxX, y: vfRect.maxY - bracketLen),
+                      radius: bracketRadius)
             tr.addLine(to: CGPoint(x: vfRect.maxX, y: vfRect.maxY - bracketLen))
             ctx.addPath(tr)
             ctx.strokePath()
@@ -86,8 +84,9 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             // Bottom-Left Bracket
             let bl = CGMutablePath()
             bl.move(to: CGPoint(x: vfRect.minX, y: vfRect.minY + bracketLen))
-            bl.addLine(to: CGPoint(x: vfRect.minX, y: vfRect.minY + bracketRadius))
-            bl.addQuadCurve(to: CGPoint(x: vfRect.minX + bracketRadius, y: vfRect.minY), control: CGPoint(x: vfRect.minX, y: vfRect.minY))
+            bl.addArc(tangent1End: CGPoint(x: vfRect.minX, y: vfRect.minY),
+                      tangent2End: CGPoint(x: vfRect.minX + bracketLen, y: vfRect.minY),
+                      radius: bracketRadius)
             bl.addLine(to: CGPoint(x: vfRect.minX + bracketLen, y: vfRect.minY))
             ctx.addPath(bl)
             ctx.strokePath()
@@ -95,43 +94,123 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             // Bottom-Right Bracket
             let br = CGMutablePath()
             br.move(to: CGPoint(x: vfRect.maxX - bracketLen, y: vfRect.minY))
-            br.addLine(to: CGPoint(x: vfRect.maxX - bracketRadius, y: vfRect.minY))
-            br.addQuadCurve(to: CGPoint(x: vfRect.maxX, y: vfRect.minY + bracketRadius), control: CGPoint(x: vfRect.maxX, y: vfRect.minY))
+            br.addArc(tangent1End: CGPoint(x: vfRect.maxX, y: vfRect.minY),
+                      tangent2End: CGPoint(x: vfRect.maxX, y: vfRect.minY + bracketLen),
+                      radius: bracketRadius)
             br.addLine(to: CGPoint(x: vfRect.maxX, y: vfRect.minY + bracketLen))
             ctx.addPath(br)
             ctx.strokePath()
             
             ctx.restoreGState()
             
-            // Central "文" Glyph
-            let font = NSFont(name: "PingFangSC-Medium", size: 9.0)
-                ?? NSFont.systemFont(ofSize: 9.0, weight: .medium)
-            let text = "文" as NSString
+            // Central '文' typography character
+            let font = NSFont.systemFont(ofSize: 9.5, weight: .semibold)
             let attrs: [NSAttributedString.Key: Any] = [
                 .font: font,
                 .foregroundColor: NSColor.black
             ]
-            let textSize = text.size(withAttributes: attrs)
-            let textRect = CGRect(
-                x: bounds.midX - textSize.width / 2,
-                y: bounds.midY - textSize.height / 2 + 0.3,
-                width: textSize.width,
-                height: textSize.height
+            let str = NSAttributedString(string: "文", attributes: attrs)
+            let strSize = str.size()
+            let strRect = NSRect(
+                x: bounds.midX - strSize.width / 2.0,
+                y: bounds.midY - strSize.height / 2.0 - 0.25,
+                width: strSize.width,
+                height: strSize.height
             )
-            text.draw(in: textRect, withAttributes: attrs)
+            str.draw(in: strRect)
             
             return true
         }
-        img.isTemplate = true
         return img
     }
 
-    /// Backup camera viewfinder icon (SF Symbol fallback).
-    static func makeBackupCameraIcon() -> NSImage? {
-        let image = NSImage(systemSymbolName: "camera.viewfinder",
-                            accessibilityDescription: "Glance")
-        image?.isTemplate = true
-        return image
+    /// Toggles the menu bar icon between normal template mode and an active amber tint
+    /// to signal that a capture or translation is actively running.
+    func setBusy(_ busy: Bool) {
+        guard let button = statusItem.button else { return }
+        if busy {
+            button.image = Self.makeBusyIcon()
+            button.image?.isTemplate = false
+        } else {
+            button.image = Self.makeMenuBarIcon()
+            button.image?.isTemplate = true
+        }
+    }
+
+    private static func makeBusyIcon() -> NSImage {
+        let size = NSSize(width: 18, height: 18)
+        let img = NSImage(size: size, flipped: false) { bounds in
+            guard let ctx = NSGraphicsContext.current?.cgContext else { return false }
+            
+            let pad: CGFloat = 1.0
+            let vfRect = bounds.insetBy(dx: pad, dy: pad)
+            let bracketLen: CGFloat = 4.0
+            let bracketRadius: CGFloat = 2.0
+            let lineWidth: CGFloat = 1.35
+            
+            let orange = NSColor.systemOrange.cgColor
+            
+            ctx.saveGState()
+            ctx.setLineWidth(lineWidth)
+            ctx.setLineCap(.round)
+            ctx.setLineJoin(.round)
+            ctx.setStrokeColor(orange)
+            
+            let tl = CGMutablePath()
+            tl.move(to: CGPoint(x: vfRect.minX, y: vfRect.maxY - bracketLen))
+            tl.addArc(tangent1End: CGPoint(x: vfRect.minX, y: vfRect.maxY),
+                      tangent2End: CGPoint(x: vfRect.minX + bracketLen, y: vfRect.maxY),
+                      radius: bracketRadius)
+            tl.addLine(to: CGPoint(x: vfRect.minX + bracketLen, y: vfRect.maxY))
+            ctx.addPath(tl)
+            ctx.strokePath()
+            
+            let tr = CGMutablePath()
+            tr.move(to: CGPoint(x: vfRect.maxX - bracketLen, y: vfRect.maxY))
+            tr.addArc(tangent1End: CGPoint(x: vfRect.maxX, y: vfRect.maxY),
+                      tangent2End: CGPoint(x: vfRect.maxX, y: vfRect.maxY - bracketLen),
+                      radius: bracketRadius)
+            tr.addLine(to: CGPoint(x: vfRect.maxX, y: vfRect.maxY - bracketLen))
+            ctx.addPath(tr)
+            ctx.strokePath()
+            
+            let bl = CGMutablePath()
+            bl.move(to: CGPoint(x: vfRect.minX, y: vfRect.minY + bracketLen))
+            bl.addArc(tangent1End: CGPoint(x: vfRect.minX, y: vfRect.minY),
+                      tangent2End: CGPoint(x: vfRect.minX + bracketLen, y: vfRect.minY),
+                      radius: bracketRadius)
+            bl.addLine(to: CGPoint(x: vfRect.minX + bracketLen, y: vfRect.minY))
+            ctx.addPath(bl)
+            ctx.strokePath()
+            
+            let br = CGMutablePath()
+            br.move(to: CGPoint(x: vfRect.maxX - bracketLen, y: vfRect.minY))
+            br.addArc(tangent1End: CGPoint(x: vfRect.maxX, y: vfRect.minY),
+                      tangent2End: CGPoint(x: vfRect.maxX, y: vfRect.minY + bracketLen),
+                      radius: bracketRadius)
+            br.addLine(to: CGPoint(x: vfRect.maxX, y: vfRect.minY + bracketLen))
+            ctx.addPath(br)
+            ctx.strokePath()
+            
+            ctx.restoreGState()
+            
+            let font = NSFont.systemFont(ofSize: 9.5, weight: .bold)
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .foregroundColor: NSColor.systemOrange
+            ]
+            let str = NSAttributedString(string: "文", attributes: attrs)
+            let strSize = str.size()
+            let strRect = NSRect(
+                x: bounds.midX - strSize.width / 2.0,
+                y: bounds.midY - strSize.height / 2.0 - 0.25,
+                width: strSize.width,
+                height: strSize.height
+            )
+            str.draw(in: strRect)
+            return true
+        }
+        return img
     }
 
     @objc private func statusItemClicked(_ sender: Any?) {
@@ -141,9 +220,9 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         statusItem.menu = nil // Reset so next click invokes statusItemClicked again
     }
 
-    // MARK: - Dynamic Menu Assembly
+    // MARK: - Menu Construction
 
-    func menuNeedsUpdate(_ menu: NSMenu) {
+    func menuWillOpen(_ menu: NSMenu) {
         rebuildMenu()
     }
 
@@ -152,13 +231,22 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
         // 1. Primary Actions
         let captureItem = NSMenuItem(
-            title: "Capture & Translate",
+            title: "Capture & Translate (\(settings.hotkey.displayString))",
             action: #selector(triggerCaptureAction),
             keyEquivalent: ""
         )
         captureItem.target = self
         captureItem.image = NSImage(systemSymbolName: "viewfinder", accessibilityDescription: nil)
         menu.addItem(captureItem)
+
+        let repeatCaptureItem = NSMenuItem(
+            title: "Re-translate Last Region (\(settings.repeatHotkey.displayString))",
+            action: #selector(triggerRepeatCaptureAction),
+            keyEquivalent: ""
+        )
+        repeatCaptureItem.target = self
+        repeatCaptureItem.image = NSImage(systemSymbolName: "arrow.clockwise.viewfinder", accessibilityDescription: nil)
+        menu.addItem(repeatCaptureItem)
 
         let openMainItem = NSMenuItem(
             title: "Open Glance Main Window",
@@ -301,6 +389,10 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         onTriggerCapture?()
     }
 
+    @objc private func triggerRepeatCaptureAction() {
+        onTriggerRepeatCapture?()
+    }
+
     @objc private func openMainWindowAction() {
         onShowHistory?()
     }
@@ -326,11 +418,5 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     @objc private func selectToneAction(_ sender: NSMenuItem) {
         guard let tone = sender.representedObject as? TranslationTone else { return }
         settings.translationTone = tone
-    }
-
-    // MARK: - Busy Indicator
-
-    func setBusy(_ busy: Bool) {
-        statusItem.button?.contentTintColor = busy ? NSColor.systemOrange : nil
     }
 }

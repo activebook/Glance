@@ -1,44 +1,69 @@
 import Foundation
 import Carbon.HIToolbox
 
-/// Registers the global hotkey via Carbon Event Manager (no Accessibility
-/// permission required) and forwards presses to `onKeyDown`.
+/// Registers global hotkeys via Carbon Event Manager (no Accessibility
+/// permission required) and forwards presses to `onKeyDown` and `onRepeatKeyDown`.
 final class HotkeyManager {
     static let shared = HotkeyManager()
 
-    /// Called on the main thread when the registered combo is pressed.
+    /// Called when the primary capture combo (e.g. ⌥G) is pressed.
     var onKeyDown: (() -> Void)?
+    /// Called when the repeat capture combo (e.g. ⇧⌥G) is pressed.
+    var onRepeatKeyDown: (() -> Void)?
 
-    private var hotKeyRef: EventHotKeyRef?
+    private var captureHotKeyRef: EventHotKeyRef?
+    private var repeatHotKeyRef: EventHotKeyRef?
     private var handlerInstalled = false
+
+    private let signature = OSType(0x474C4E43) // 'GLNC'
 
     private init() {}
 
-    /// Replaces any existing registration. Safe to call repeatedly.
-    func register(_ combo: HotkeyCombo) {
+    /// Registers both the primary capture combo and repeat capture combo.
+    func register(capture: HotkeyCombo, repeatCapture: HotkeyCombo) {
         unregister()
         installHandlerIfNeeded()
 
-        var ref: EventHotKeyRef?
-        let hotKeyID = EventHotKeyID(signature: OSType(0x474C4E43), // 'GLNC'
-                                     id: 1)
-        let status = RegisterEventHotKey(combo.keyCode,
-                                         combo.carbonModifiers,
-                                         hotKeyID,
-                                         GetApplicationEventTarget(),
-                                         0,
-                                         &ref)
-        if status == noErr {
-            hotKeyRef = ref
+        // 1. Register Primary Capture Hotkey (ID 1)
+        var capRef: EventHotKeyRef?
+        let capID = EventHotKeyID(signature: signature, id: 1)
+        let capStatus = RegisterEventHotKey(capture.keyCode,
+                                            capture.carbonModifiers,
+                                            capID,
+                                            GetApplicationEventTarget(),
+                                            0,
+                                            &capRef)
+        if capStatus == noErr {
+            captureHotKeyRef = capRef
         } else {
-            NSLog("Glance: RegisterEventHotKey failed (status \(status)) for \(combo.displayString)")
+            NSLog("Glance: RegisterEventHotKey primary failed (status \(capStatus)) for \(capture.displayString)")
+        }
+
+        // 2. Register Repeat Capture Hotkey (ID 2)
+        var repRef: EventHotKeyRef?
+        let repID = EventHotKeyID(signature: signature, id: 2)
+        let repStatus = RegisterEventHotKey(repeatCapture.keyCode,
+                                            repeatCapture.carbonModifiers,
+                                            repID,
+                                            GetApplicationEventTarget(),
+                                            0,
+                                            &repRef)
+        if repStatus == noErr {
+            repeatHotKeyRef = repRef
+        } else {
+            NSLog("Glance: RegisterEventHotKey repeat failed (status \(repStatus)) for \(repeatCapture.displayString)")
         }
     }
 
     func unregister() {
-        guard let ref = hotKeyRef else { return }
-        UnregisterEventHotKey(ref)
-        hotKeyRef = nil
+        if let ref = captureHotKeyRef {
+            UnregisterEventHotKey(ref)
+            captureHotKeyRef = nil
+        }
+        if let ref = repeatHotKeyRef {
+            UnregisterEventHotKey(ref)
+            repeatHotKeyRef = nil
+        }
     }
 
     private func installHandlerIfNeeded() {
@@ -47,8 +72,23 @@ final class HotkeyManager {
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                       eventKind: UInt32(kEventHotKeyPressed))
         // C-function-pointer context: no captures allowed, so route through singleton.
-        let callback: EventHandlerUPP = { _, _, _ in
-            HotkeyManager.shared.onKeyDown?()
+        let callback: EventHandlerUPP = { _, event, _ -> OSStatus in
+            guard let event else { return noErr }
+            var hotKeyID = EventHotKeyID()
+            let status = GetEventParameter(event,
+                                           EventParamName(kEventParamDirectObject),
+                                           EventParamType(typeEventHotKeyID),
+                                           nil,
+                                           MemoryLayout<EventHotKeyID>.size,
+                                           nil,
+                                           &hotKeyID)
+            if status == noErr {
+                if hotKeyID.id == 1 {
+                    HotkeyManager.shared.onKeyDown?()
+                } else if hotKeyID.id == 2 {
+                    HotkeyManager.shared.onRepeatKeyDown?()
+                }
+            }
             return noErr
         }
         let status = InstallEventHandler(GetApplicationEventTarget(),

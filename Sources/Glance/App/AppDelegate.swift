@@ -62,6 +62,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             controller.onTriggerCapture = { [weak self] in
                 self?.captureCoordinator?.beginSelection()
             }
+            controller.onTriggerRepeatCapture = { [weak self] in
+                self?.captureCoordinator?.beginRepeatCapture()
+            }
             menuBarController = controller
 
             let panel = ResultPanelController()
@@ -90,18 +93,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Registers the configured hotkey now and re-registers whenever it changes.
+    /// Registers the configured hotkeys now and re-registers whenever they change.
     private func setupGlobalHotkey() {
         HotkeyManager.shared.onKeyDown = { [weak self] in
             self?.captureCoordinator?.beginSelection()
         }
+        HotkeyManager.shared.onRepeatKeyDown = { [weak self] in
+            self?.captureCoordinator?.beginRepeatCapture()
+        }
 
-        settings.$hotkey
-            .removeDuplicates()
+        Publishers.CombineLatest(settings.$hotkey, settings.$repeatHotkey)
+            .removeDuplicates { prev, curr in
+                prev.0 == curr.0 && prev.1 == curr.1
+            }
             .receive(on: DispatchQueue.main)
-            .sink { combo in
-                HotkeyManager.shared.register(combo)
-                NSLog("Glance: global hotkey registered → \(combo.displayString)")
+            .sink { captureCombo, repeatCombo in
+                HotkeyManager.shared.register(capture: captureCombo, repeatCapture: repeatCombo)
+                NSLog("Glance: hotkeys registered → primary: \(captureCombo.displayString), repeat: \(repeatCombo.displayString)")
             }
             .store(in: &cancellables)
     }
