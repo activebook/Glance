@@ -39,6 +39,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Launch directly with the Glance Main Window front and center
         showHistory()
 
+        // Proactively open Settings on the AI Service tab if no endpoints are configured yet
+        if settings.endpoints.isEmpty {
+            showSettings(tab: .aiService)
+        }
+
         // Automatically check for updates in the background if enabled
         if settings.automaticallyCheckForUpdates {
             Task {
@@ -144,9 +149,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Windows
 
-    private func showSettings() {
+    private func showSettings(tab: SettingsTab = .translation) {
         if settingsWindowController == nil {
-            settingsWindowController = SettingsWindowController(settings: settings)
+            settingsWindowController = SettingsWindowController(settings: settings, initialTab: tab)
+        } else {
+            settingsWindowController?.select(tab: tab)
         }
         guard let window = settingsWindowController?.window else { return }
         NSApp.activate(ignoringOtherApps: true)

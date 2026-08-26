@@ -1,13 +1,82 @@
 import SwiftUI
 
-/// Settings for translation target language, style/tone personas, TTS speech synthesis,
-/// and result HUD auto-dismiss timing.
+/// Settings for Translation shortcuts, target languages, style/tone personas,
+/// result HUD auto-dismiss timing, and TTS speech synthesis.
 struct TranslationTab: View {
     @ObservedObject var settings: SettingsStore
     @ObservedObject var ttsManager = TTSManager.shared
+    @StateObject private var recorder = HotkeyRecorderModel()
+    @State private var activeRecordingTarget: RecordingTarget?
+
+    enum RecordingTarget {
+        case primary
+        case repeatCapture
+    }
 
     var body: some View {
         Form {
+            // 1. Global Shortcuts Section
+            Section("Global Shortcuts") {
+                // Primary capture
+                HStack(spacing: 16) {
+                    keyCap(
+                        combo: settings.hotkey,
+                        isTargetActive: activeRecordingTarget == .primary && recorder.isRecording,
+                        target: .primary
+                    )
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(activeRecordingTarget == .primary && recorder.isRecording
+                             ? "Type a new shortcut… (Esc to cancel)"
+                             : "Capture & Translate")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(activeRecordingTarget == .primary && recorder.isRecording ? Color.orange : Color.primary)
+                        Text("Select any area or window on your screen to translate.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button("Reset") {
+                        commit(HotkeyCombo.default, for: .primary)
+                    }
+                    .disabled((activeRecordingTarget == .primary && recorder.isRecording) || settings.hotkey == .default)
+                    .controlSize(.small)
+                }
+                .padding(.vertical, 2)
+
+                // Repeat / Lock capture
+                HStack(spacing: 16) {
+                    keyCap(
+                        combo: settings.repeatHotkey,
+                        isTargetActive: activeRecordingTarget == .repeatCapture && recorder.isRecording,
+                        target: .repeatCapture
+                    )
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(activeRecordingTarget == .repeatCapture && recorder.isRecording
+                             ? "Type a new shortcut… (Esc to cancel)"
+                             : "Re-translate Last Area")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(activeRecordingTarget == .repeatCapture && recorder.isRecording ? Color.orange : Color.primary)
+                        Text("Instantly translates the same area again — perfect for video subtitles, manga, and reading.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button("Reset") {
+                        commit(HotkeyCombo.defaultRepeat, for: .repeatCapture)
+                    }
+                    .disabled((activeRecordingTarget == .repeatCapture && recorder.isRecording) || settings.repeatHotkey == .defaultRepeat)
+                    .controlSize(.small)
+                }
+                .padding(.vertical, 2)
+            }
+
+            // 2. Translation & Style Section
             Section("Translation & Style") {
                 Picker("Target Language", selection: $settings.targetLanguage) {
                     ForEach(AppLanguage.allCases) { language in
@@ -42,6 +111,7 @@ struct TranslationTab: View {
                 }
             }
 
+            // 3. Speech & Audio Section
             Section("Speech & Audio (Text-to-Speech)") {
                 VStack(alignment: .leading, spacing: 6) {
                     Picker("Engine", selection: $settings.ttsEngine) {
@@ -102,5 +172,56 @@ struct TranslationTab: View {
         }
         .formStyle(.grouped)
         .toggleStyle(.switch)
+    }
+
+    // MARK: - Key cap helper
+
+    private func keyCap(combo: HotkeyCombo, isTargetActive: Bool, target: RecordingTarget) -> some View {
+        Button {
+            if isTargetActive {
+                recorder.stopRecording()
+                activeRecordingTarget = nil
+            } else {
+                activeRecordingTarget = target
+                recorder.startRecording(
+                    onCombo: { newCombo in
+                        commit(newCombo, for: target)
+                    },
+                    onCancel: {
+                        activeRecordingTarget = nil
+                    }
+                )
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: isTargetActive ? "dot.radiowaves.left.and.right" : "command.square")
+                    .font(.system(size: 12))
+                Text(isTargetActive ? "…" : combo.displayString)
+                    .font(.system(size: 14, weight: .medium))
+                    .monospacedDigit()
+                    .frame(minWidth: 48)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .stroke(isTargetActive ? Color.orange : Color(nsColor: .separatorColor),
+                            lineWidth: isTargetActive ? 1.5 : 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .help("Click to record shortcut")
+    }
+
+    private func commit(_ combo: HotkeyCombo, for target: RecordingTarget) {
+        recorder.stopRecording()
+        activeRecordingTarget = nil
+        switch target {
+        case .primary:
+            settings.hotkey = combo
+        case .repeatCapture:
+            settings.repeatHotkey = combo
+        }
     }
 }

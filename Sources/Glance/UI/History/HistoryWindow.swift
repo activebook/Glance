@@ -278,8 +278,20 @@ struct HistoryView: View {
                     Text(model.searchQuery.isEmpty ? "No snapshots saved yet" : "No matching snapshots")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.secondary)
-                    if model.searchQuery.isEmpty {
-                        Text("Capture your screen with \(model.settings.hotkey.displayString) to begin translating.")
+                    if model.settings.endpoints.isEmpty {
+                        VStack(spacing: 8) {
+                            Text("No AI Service configured yet.")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            Button("Configure AI Service") {
+                                onShowSettings?()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                        }
+                        .padding(.top, 4)
+                    } else if model.searchQuery.isEmpty {
+                        Text("Capture your screen with \(model.settings.hotkey.displayString) or \(model.settings.repeatHotkey.displayString) to begin translating.")
                             .font(.system(size: 11))
                             .foregroundStyle(.tertiary)
                             .multilineTextAlignment(.center)

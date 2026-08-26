@@ -240,7 +240,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         menu.addItem(captureItem)
 
         let repeatCaptureItem = NSMenuItem(
-            title: "Re-translate Last Region (\(settings.repeatHotkey.displayString))",
+            title: "Re-translate Last Area (\(settings.repeatHotkey.displayString))",
             action: #selector(triggerRepeatCaptureAction),
             keyEquivalent: ""
         )

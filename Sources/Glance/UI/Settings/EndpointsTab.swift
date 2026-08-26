@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// Endpoint management: NavigationSplitView master/detail with a draft-based
-/// editor. Typing never writes to the store (fixes focus-loss defect from M1);
-/// changes commit atomically via the Save action.
+/// AI Service management: NavigationSplitView master/detail with provider presets,
+/// atomic draft-based editing, API key handling, and connection testing.
 struct EndpointsTab: View {
     @ObservedObject var settings: SettingsStore
 
@@ -12,7 +11,7 @@ struct EndpointsTab: View {
     @State private var draft = EndpointDraft()
     @State private var savedSnapshot = EndpointDraft()
     @State private var pendingDeletion: EndpointConfig?
-    @State private var pendingNavigation: UUID?      // selection change blocked by dirty guard
+    @State private var pendingNavigation: UUID?
     @State private var showUnsavedDialog = false
     @State private var showKey = false
     @State private var testState: TestState = .idle
@@ -32,6 +31,55 @@ struct EndpointsTab: View {
         var model = ""
         var apiKey = ""
     }
+
+    struct ProviderPreset: Identifiable {
+        let id: String
+        let name: String
+        let icon: String
+        let label: String
+        let baseURL: String
+        let model: String
+        let requiresKey: Bool
+    }
+
+    private let presets: [ProviderPreset] = [
+        ProviderPreset(
+            id: "openai",
+            name: "OpenAI",
+            icon: "sparkles",
+            label: "OpenAI GPT-4o-mini",
+            baseURL: "https://api.openai.com/v1",
+            model: "gpt-4o-mini",
+            requiresKey: true
+        ),
+        ProviderPreset(
+            id: "deepseek",
+            name: "DeepSeek",
+            icon: "bolt.fill",
+            label: "DeepSeek Chat",
+            baseURL: "https://api.deepseek.com",
+            model: "deepseek-chat",
+            requiresKey: true
+        ),
+        ProviderPreset(
+            id: "openrouter",
+            name: "OpenRouter",
+            icon: "globe",
+            label: "OpenRouter",
+            baseURL: "https://openrouter.ai/api/v1",
+            model: "google/gemini-2.5-flash",
+            requiresKey: true
+        ),
+        ProviderPreset(
+            id: "ollama",
+            name: "Ollama (Local)",
+            icon: "macmini",
+            label: "Ollama Local",
+            baseURL: "http://localhost:11434/v1",
+            model: "llama3.2-vision",
+            requiresKey: false
+        )
+    ]
 
     private var selectedEndpoint: EndpointConfig? {
         settings.endpoints.first { $0.id == selectedID }
@@ -63,7 +111,6 @@ struct EndpointsTab: View {
             handleSelectionChange(to: newValue)
         }
         .onChange(of: draft) { _, _ in
-            // Any edit invalidates a previous test result.
             if case .success = testState { testState = .idle }
             if case .failure = testState { testState = .idle }
         }
@@ -72,7 +119,7 @@ struct EndpointsTab: View {
             isPresented: deletionDialogBinding,
             titleVisibility: .visible
         ) {
-            Button("Delete Endpoint", role: .destructive) { confirmDeletion() }
+            Button("Delete AI Service", role: .destructive) { confirmDeletion() }
             Button("Cancel", role: .cancel) { pendingDeletion = nil }
         } message: {
             Text("Its stored API key will also be removed. This cannot be undone.")
@@ -91,7 +138,7 @@ struct EndpointsTab: View {
                 proceedAfterGuard()
             }
             Button("Cancel", role: .cancel) {
-                selectedID = selectedID // snap selection back; see handleSelectionChange
+                selectedID = selectedID
                 pendingNavigation = nil
             }
         } message: {
@@ -108,7 +155,7 @@ struct EndpointsTab: View {
                     .tag(endpoint.id)
                     .contextMenu {
                         Button(settings.defaultEndpointID == endpoint.id
-                               ? "✓ Default Endpoint" : "Set as Default") {
+                               ? "✓ Default Service" : "Set as Default") {
                             settings.setDefaultEndpoint(id: endpoint.id)
                         }
                         Button("Duplicate") { duplicate(endpoint) }
@@ -120,17 +167,38 @@ struct EndpointsTab: View {
         .listStyle(.sidebar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             HStack(spacing: 14) {
-                Button { addEndpoint() } label: { Image(systemName: "plus") }
-                    .help("Add endpoint")
+                Menu {
+                    Section("Quick Add Preset") {
+                        ForEach(presets) { preset in
+                            Button {
+                                addPreset(preset)
+                            } label: {
+                                Label(preset.name, systemImage: preset.icon)
+                            }
+                        }
+                    }
+                    Divider()
+                    Button("Custom AI Service…") {
+                        addEndpoint()
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .menuStyle(.borderlessButton)
+                .help("Add AI Service")
+
                 Button { duplicateSelected() } label: { Image(systemName: "plus.square.on.square") }
                     .disabled(selectedEndpoint == nil)
-                    .help("Duplicate selected endpoint")
+                    .help("Duplicate selected service")
+
                 Button(role: .destructive) {
                     if let endpoint = selectedEndpoint { pendingDeletion = endpoint }
                 } label: { Image(systemName: "trash") }
                     .disabled(selectedEndpoint == nil)
-                    .help("Delete selected endpoint")
+                    .help("Delete selected service")
+
                 Spacer()
+
                 if let active = settings.activeEndpoint() {
                     Label(active.label, systemImage: "bolt.fill")
                         .font(.system(size: 10))
@@ -161,7 +229,7 @@ struct EndpointsTab: View {
                 Image(systemName: "star.fill")
                     .font(.system(size: 9))
                     .foregroundStyle(.yellow)
-                    .help("Default endpoint")
+                    .help("Default AI Service")
             }
         }
         .padding(.vertical, 2)
@@ -190,53 +258,46 @@ struct EndpointsTab: View {
 
     private var editorForm: some View {
         Form {
-            Section("Endpoint") {
-                LabeledContent("Name") {
+            Section("AI Service Details") {
+                LabeledContent("Service Name") {
                     TextField("", text: $draft.label)
                         .textFieldStyle(.roundedBorder)
                 }
                 LabeledContent("Base URL") {
                     TextField("", text: $draft.baseURLText)
                         .textFieldStyle(.roundedBorder)
-                        .disableAutocorrection(true)
                 }
-                LabeledContent("Model") {
+                LabeledContent("Model Name") {
                     TextField("", text: $draft.model)
                         .textFieldStyle(.roundedBorder)
-                        .disableAutocorrection(true)
                 }
             }
 
-            Section("API Key") {
-                HStack(spacing: 8) {
-                    Group {
+            Section {
+                LabeledContent("API Key") {
+                    HStack(spacing: 6) {
                         if showKey {
                             TextField("", text: $draft.apiKey)
                                 .textFieldStyle(.roundedBorder)
-                                .font(.system(size: 12, design: .monospaced))
                         } else {
                             SecureField("", text: $draft.apiKey)
                                 .textFieldStyle(.roundedBorder)
                         }
-                    }
-                    Button {
-                        showKey.toggle()
-                    } label: {
-                        Image(systemName: showKey ? "eye.slash" : "eye")
-                    }
-                    .buttonStyle(.borderless)
-                    .help(showKey ? "Hide key" : "Show key")
 
-                    Button {
-                        pasteKey()
-                    } label: {
-                        Image(systemName: "doc.on.clipboard")
+                        Button { showKey.toggle() } label: {
+                            Image(systemName: showKey ? "eye.slash" : "eye")
+                        }
+                        .buttonStyle(.plain)
+                        .help(showKey ? "Hide key" : "Show key")
+
+                        Button("Paste") { pasteKey() }
+                            .controlSize(.small)
                     }
-                    .buttonStyle(.borderless)
-                    .help("Paste from clipboard")
                 }
-
-                Text("Stored in the macOS Keychain — written only when you press Save.")
+            } header: {
+                Text("Authentication")
+            } footer: {
+                Text("Stored securely in your macOS Keychain. Never transmitted anywhere except directly to your specified Base URL.")
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
             }
@@ -255,11 +316,11 @@ struct EndpointsTab: View {
                 case .idle:
                     EmptyView()
                 case .running:
-                    Text("Contacting endpoint…")
+                    Text("Connecting to AI endpoint…")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 case .success(let latencyMs):
-                    Label("Connected · \(latencyMs) ms", systemImage: "checkmark.circle.fill")
+                    Label("Connected successfully · \(latencyMs) ms", systemImage: "checkmark.circle.fill")
                         .font(.system(size: 11))
                         .foregroundStyle(.green)
                 case .failure(let message):
@@ -270,7 +331,7 @@ struct EndpointsTab: View {
             } header: {
                 Text("Connection Test")
             } footer: {
-                Text("Tests the values currently in the form — unsaved edits included.")
+                Text("Tests the live vision API endpoint using the values above.")
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
             }
@@ -283,8 +344,7 @@ struct EndpointsTab: View {
     private var validationSummary: some View {
         if isDirty {
             if validationErrors.isEmpty {
-                Label("Looks good — ready to save",
-                      systemImage: "checkmark.circle.fill")
+                Label("Looks good — ready to save", systemImage: "checkmark.circle.fill")
                     .font(.system(size: 11))
                     .foregroundStyle(.green)
             } else {
@@ -314,7 +374,7 @@ struct EndpointsTab: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(!validationErrors.isEmpty)
             } else if !validationErrors.isEmpty {
-                Text("This endpoint has problems — edit to fix.")
+                Text("This service has errors — please fix before saving.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -325,20 +385,53 @@ struct EndpointsTab: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "network")
-                .font(.system(size: 32))
-                .foregroundStyle(.tertiary)
-            Text(settings.endpoints.isEmpty ? "No endpoints yet" : "No endpoint selected")
-                .font(.system(size: 14, weight: .medium))
-            Text("Add an OpenAI-compatible endpoint to start translating screenshots.")
-                .font(.system(size: 11))
+        VStack(spacing: 16) {
+            Image(systemName: "cpu")
+                .font(.system(size: 36))
+                .foregroundStyle(.tint)
+
+            VStack(spacing: 4) {
+                Text(settings.endpoints.isEmpty ? "No AI Service Configured" : "No Service Selected")
+                    .font(.system(size: 15, weight: .semibold))
+                Text("Glance translates screen captures by connecting to OpenAI-compatible vision models.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 380)
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Quick Add Provider Preset:")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 10) {
+                    ForEach(presets) { preset in
+                        Button {
+                            addPreset(preset)
+                        } label: {
+                            VStack(spacing: 6) {
+                                Image(systemName: preset.icon)
+                                    .font(.system(size: 16))
+                                Text(preset.name)
+                                    .font(.system(size: 11, weight: .medium))
+                            }
+                            .frame(width: 80, height: 56)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+            }
+            .padding(.top, 4)
+
+            Button("Add Custom Service") { addEndpoint() }
+                .buttonStyle(.plain)
+                .font(.system(size: 12))
                 .foregroundStyle(.secondary)
-            Button("Add Endpoint") { addEndpoint() }
-                .buttonStyle(.borderedProminent)
-                .padding(.top, 4)
+                .padding(.top, 2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(24)
     }
 
     // MARK: - Draft lifecycle
@@ -385,7 +478,6 @@ struct EndpointsTab: View {
         }
     }
 
-    /// Dirty-guard for selection changes: intercepts the switch and asks.
     private func handleSelectionChange(to newID: UUID) {
         if isDirty && pendingNavigation != newID {
             pendingNavigation = newID
@@ -401,8 +493,7 @@ struct EndpointsTab: View {
             set: { shown in
                 showUnsavedDialog = shown
                 if !shown && pendingNavigation != nil {
-                    // Dialog dismissed without choosing (Esc) → revert selection.
-                    selectedID = previousValidSelection()
+                    selectedID = selectedID
                     pendingNavigation = nil
                 }
             }
@@ -414,11 +505,6 @@ struct EndpointsTab: View {
             get: { pendingDeletion != nil },
             set: { if !$0 { pendingDeletion = nil } }
         )
-    }
-
-    private func previousValidSelection() -> UUID? {
-        // The still-loaded snapshot belongs to this endpoint.
-        selectedID
     }
 
     private func proceedAfterGuard() {
@@ -442,9 +528,18 @@ struct EndpointsTab: View {
 
     // MARK: - CRUD helpers
 
+    private func addPreset(_ preset: ProviderPreset) {
+        let endpoint = EndpointConfig(
+            label: preset.label,
+            baseURL: URL(string: preset.baseURL) ?? EndpointConfig.exampleBaseURL,
+            model: preset.model
+        )
+        settings.addEndpoint(endpoint, key: nil)
+        selectedID = endpoint.id
+        loadDraft(from: endpoint)
+    }
+
     private func addEndpoint() {
-        // New endpoints arrive pre-filled with example values as real,
-        // editable defaults (M1.2) — no placeholder hints inside fields.
         let endpoint = EndpointConfig(label: EndpointConfig.exampleLabel,
                                       baseURL: EndpointConfig.exampleBaseURL,
                                       model: EndpointConfig.exampleModel)
@@ -488,7 +583,6 @@ struct EndpointsTab: View {
                                                          apiKey: apiKey,
                                                          model: model)
             await MainActor.run {
-                // Ignore stale results if the user started another test meanwhile.
                 guard testState.isRunning else { return }
                 switch outcome {
                 case .success(let ms): testState = .success(latencyMs: ms)
