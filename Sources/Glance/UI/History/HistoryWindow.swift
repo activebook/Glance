@@ -810,18 +810,26 @@ struct HistoryDetailView: View {
     private var fallbackTranslationCard: some View {
         VStack(alignment: .leading, spacing: 6) {
             if !record.sourceText.isEmpty {
-                Text(record.sourceText)
-                    .font(.system(size: model.settings.sourceFontSize, weight: .regular))
-                    .foregroundStyle(model.settings.sourceTextColor.color)
-                    .textSelection(.enabled)
-                    .lineSpacing(2)
+                RubyTextView(
+                    text: record.sourceText,
+                    fontSize: model.settings.sourceFontSize,
+                    fontWeight: .regular,
+                    textColor: model.settings.sourceTextColor.color,
+                    showFurigana: model.settings.showFurigana,
+                    rubyScaleFactor: CGFloat(model.settings.furiganaScaleFactor),
+                    lineSpacing: 2
+                )
             }
 
-            Text(record.translatedText.isEmpty ? " " : record.translatedText)
-                .font(.system(size: model.settings.translatedFontSize, weight: .medium))
-                .foregroundStyle(model.settings.translatedTextColor.color)
-                .textSelection(.enabled)
-                .lineSpacing(4)
+            RubyTextView(
+                text: record.translatedText.isEmpty ? " " : record.translatedText,
+                fontSize: model.settings.translatedFontSize,
+                fontWeight: .medium,
+                textColor: model.settings.translatedTextColor.color,
+                showFurigana: model.settings.showFurigana,
+                rubyScaleFactor: CGFloat(model.settings.furiganaScaleFactor),
+                lineSpacing: 4
+            )
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -836,19 +844,27 @@ struct HistoryDetailView: View {
         VStack(alignment: .leading, spacing: 6) {
             // 1. Original Source Text (Always on top)
             if !item.source.isEmpty {
-                Text(item.source)
-                    .font(.system(size: model.settings.sourceFontSize, weight: .regular))
-                    .foregroundStyle(model.settings.sourceTextColor.color)
-                    .textSelection(.enabled)
-                    .lineSpacing(2)
+                RubyTextView(
+                    text: item.source,
+                    fontSize: model.settings.sourceFontSize,
+                    fontWeight: .regular,
+                    textColor: model.settings.sourceTextColor.color,
+                    showFurigana: model.settings.showFurigana,
+                    rubyScaleFactor: CGFloat(model.settings.furiganaScaleFactor),
+                    lineSpacing: 2
+                )
             }
 
             // 2. Target Translated Text (Below original)
-            Text(item.translation.isEmpty ? " " : item.translation)
-                .font(.system(size: model.settings.translatedFontSize, weight: .medium))
-                .foregroundStyle(model.settings.translatedTextColor.color)
-                .textSelection(.enabled)
-                .lineSpacing(3)
+            RubyTextView(
+                text: item.translation.isEmpty ? " " : item.translation,
+                fontSize: model.settings.translatedFontSize,
+                fontWeight: .medium,
+                textColor: model.settings.translatedTextColor.color,
+                showFurigana: model.settings.showFurigana,
+                rubyScaleFactor: CGFloat(model.settings.furiganaScaleFactor),
+                lineSpacing: 3
+            )
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -57,6 +57,8 @@ final class ResultPanelController {
               sourceTextColor: ColorOption = .secondary,
               translatedFontSize: Double = 14,
               translatedTextColor: ColorOption = .primary,
+              showFurigana: Bool = true,
+              furiganaScaleFactor: Double = 0.6,
               onRetry: (() -> Void)? = nil) {
         hide()
         isHovered = false
@@ -80,6 +82,8 @@ final class ResultPanelController {
                 sourceTextColor: sourceTextColor,
                 translatedFontSize: translatedFontSize,
                 translatedTextColor: translatedTextColor,
+                showFurigana: showFurigana,
+                furiganaScaleFactor: furiganaScaleFactor,
                 onRetry: onRetry,
                 onOpenHistory: { [weak self] id in
                     self?.hide()
@@ -215,6 +219,8 @@ struct ResultPanelView: View {
     let sourceTextColor: ColorOption
     let translatedFontSize: Double
     let translatedTextColor: ColorOption
+    let showFurigana: Bool
+    let furiganaScaleFactor: Double
     let onRetry: (() -> Void)?
     let onOpenHistory: ((UUID?) -> Void)?
 
@@ -262,6 +268,10 @@ struct ResultPanelView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
         .shadow(color: .black.opacity(0.32), radius: 18, x: 0, y: 7)
+        .onHover { hovering in
+            isHovered = hovering
+            PanelHoverBridge.shared.controller?.setHovering(hovering)
+        }
         .onAppear {
             if !isProcessing {
                 progress = 1.0
@@ -272,11 +282,9 @@ struct ResultPanelView: View {
                 }
             }
         }
-        .onHover { hovering in
-            isHovered = hovering
-            PanelHoverBridge.shared.controller?.setHovering(hovering)
-        }
     }
+
+    // MARK: - Subviews
 
     @ViewBuilder
     private var contentBody: some View {
@@ -304,21 +312,27 @@ struct ResultPanelView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             // 1. Original Source Text (Always on top)
                             if !item.source.isEmpty {
-                                Text(item.source)
-                                    .font(.system(size: sourceFontSize, weight: .regular))
-                                    .foregroundStyle(sourceTextColor.color)
-                                    .multilineTextAlignment(.leading)
-                                    .textSelection(.enabled)
-                                    .lineSpacing(2)
+                                RubyTextView(
+                                    text: item.source,
+                                    fontSize: sourceFontSize,
+                                    fontWeight: .regular,
+                                    textColor: sourceTextColor.color,
+                                    showFurigana: showFurigana,
+                                    rubyScaleFactor: CGFloat(furiganaScaleFactor),
+                                    lineSpacing: 2
+                                )
                             }
 
                             // 2. Target Translated Text (Below original)
-                            Text(item.translation.isEmpty ? " " : item.translation)
-                                .font(.system(size: translatedFontSize, weight: .medium))
-                                .foregroundStyle(translatedTextColor.color)
-                                .multilineTextAlignment(.leading)
-                                .textSelection(.enabled)
-                                .lineSpacing(3)
+                            RubyTextView(
+                                text: item.translation.isEmpty ? " " : item.translation,
+                                fontSize: translatedFontSize,
+                                fontWeight: .medium,
+                                textColor: translatedTextColor.color,
+                                showFurigana: showFurigana,
+                                rubyScaleFactor: CGFloat(furiganaScaleFactor),
+                                lineSpacing: 3
+                            )
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
