@@ -111,7 +111,57 @@ struct TranslationTab: View {
                 }
             }
 
-            // 3. Speech & Audio Section
+            // 3. Japanese (Furigana / 振仮名)
+            Section("Japanese (Furigana / 振仮名)") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Toggle("Display Furigana on Kanji", isOn: $settings.showFurigana)
+                        .help("Show phonetic Hiragana reading annotations (振仮名) directly above Kanji characters in both source and translated text.")
+
+                    if settings.showFurigana {
+                        LabeledContent("Furigana Size") {
+                            HStack(spacing: 10) {
+                                Slider(value: $settings.furiganaScaleFactor, in: 0.40...0.70, step: 0.05)
+                                    .frame(width: 140)
+
+                                Text(String(format: "%.0f%%", settings.furiganaScaleFactor * 100))
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 45, alignment: .trailing)
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Live Preview")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(.secondary)
+
+                            HStack {
+                                Spacer()
+                                RubyTextView(
+                                    text: "日本語をもっと楽しく勉強しよう",
+                                    fontSize: 14,
+                                    fontWeight: .medium,
+                                    textColor: .primary,
+                                    showFurigana: true,
+                                    rubyScaleFactor: CGFloat(settings.furiganaScaleFactor),
+                                    lineSpacing: 3
+                                )
+                                Spacer()
+                            }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.6))
+                                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                            )
+                        }
+                        .padding(.top, 2)
+                    }
+                }
+            }
+
+            // 4. Speech & Audio Section
             Section("Speech & Audio (Text-to-Speech)") {
                 VStack(alignment: .leading, spacing: 6) {
                     Picker("Engine", selection: $settings.ttsEngine) {

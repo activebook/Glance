@@ -141,7 +141,9 @@ final class CaptureCoordinator {
             sourceFontSize: settings.sourceFontSize,
             sourceTextColor: settings.sourceTextColor,
             translatedFontSize: settings.translatedFontSize,
-            translatedTextColor: settings.translatedTextColor
+            translatedTextColor: settings.translatedTextColor,
+            showFurigana: settings.showFurigana,
+            furiganaScaleFactor: settings.furiganaScaleFactor
         )
 
         let image = captured.image
@@ -230,6 +232,8 @@ final class CaptureCoordinator {
                               sourceTextColor: settings.sourceTextColor,
                               translatedFontSize: settings.translatedFontSize,
                               translatedTextColor: settings.translatedTextColor,
+                              showFurigana: settings.showFurigana,
+                              furiganaScaleFactor: settings.furiganaScaleFactor,
                               onRetry: { [weak self] in
                                   Task { @MainActor in
                                       await self?.translate(record: record, image: image)
@@ -289,7 +293,9 @@ final class CaptureCoordinator {
                           sourceFontSize: settings.sourceFontSize,
                           sourceTextColor: settings.sourceTextColor,
                           translatedFontSize: settings.translatedFontSize,
-                          translatedTextColor: settings.translatedTextColor)
+                          translatedTextColor: settings.translatedTextColor,
+                          showFurigana: settings.showFurigana,
+                          furiganaScaleFactor: settings.furiganaScaleFactor)
     }
 
     private func showFailurePanel(_ message: String, record: SnapshotRecord? = nil, image: CGImage? = nil) {
@@ -304,6 +310,8 @@ final class CaptureCoordinator {
                           sourceTextColor: settings.sourceTextColor,
                           translatedFontSize: settings.translatedFontSize,
                           translatedTextColor: settings.translatedTextColor,
+                          showFurigana: settings.showFurigana,
+                          furiganaScaleFactor: settings.furiganaScaleFactor,
                           onRetry: { [weak self] in
                               guard let self, let record, let image else { return }
                               Task { @MainActor in

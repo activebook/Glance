@@ -45,10 +45,11 @@ Whenever you encounter foreign languages, code snippets, scanned documents, vide
   <img src="images/settings_translation.png" width="540" alt="Glance Translation & Global Shortcuts Settings" />
 </p>
 
-- **`⌥G` Capture & Translate**: Darkened overlay with freeform marquee drag or single-click smart window snapping.
-- **`⇧⌥G` Re-translate Last Area**: Zero-overlay instant re-capture — perfect for video subtitles, manga, and live streams.
-- **Adaptive Personas**: Natural & Fluent, Bilingual Explanatory, Japanese Furigana, Technical, Concise, and more.
-- **Neural TTS Audio**: Edge Neural voices with playback speed control and offline Apple voice fallback.
+- **`⌥G` Capture & Translate**: Drag to select any area or click to snap to a window.
+- **`⇧⌥G` Re-translate Last Area**: Instantly re-capture the previous selection without overlays — perfect for video subtitles, manga, and reading.
+- **Japanese Furigana (振仮名)**: Displays phonetic reading annotations directly above Kanji in both captured and translated text, with customizable font sizing and full text selection.
+- **Tailored Translation Tones**: Natural & Fluent, Bilingual Explanatory, Technical, Concise, and more.
+- **Natural Voice Audio**: High-quality text-to-speech pronunciation with adjustable playback speed.
 
 ---
 
@@ -58,9 +59,9 @@ Whenever you encounter foreign languages, code snippets, scanned documents, vide
   <img src="images/settings_ai_service.png" width="540" alt="Glance AI Service Provider Presets" />
 </p>
 
-- **1-Click Presets**: Pre-configured support for **OpenAI** (`gpt-5.6-luna`), **Google** (`gemini-flash-lite-latest`), **DeepSeek** (`deepseek-v4-flash-vision-exp`), **OpenRouter** (`qwen/qwen3.8-27b`), **Ollama** (`llama3.2-vision`), and custom OpenAI-compatible endpoints.
-- **Keychain Security**: End-to-end encrypted API key storage in macOS Keychain.
-- **Live Latency Diagnostics**: Instant connectivity and response time testing.
+- **1-Click Presets**: Ready to use with **OpenAI**, **Google Gemini**, **DeepSeek**, **OpenRouter**, **Ollama (Local)**, or any custom AI service.
+- **Secure Keychain Storage**: API keys are encrypted and stored safely in the macOS Keychain.
+- **Live Connection Testing**: Test service connectivity and response speed with a single click.
 
 ---
 

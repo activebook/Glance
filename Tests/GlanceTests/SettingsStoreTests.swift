@@ -173,4 +173,24 @@ final class SettingsStoreTests: XCTestCase {
         let second = makeStore()
         XCTAssertEqual(second.historyLayoutMode, .gallery)
     }
+
+    func test_showFurigana_defaultsAndPersistence() {
+        let first = makeStore()
+        XCTAssertTrue(first.showFurigana)
+
+        first.showFurigana = false
+
+        let second = makeStore()
+        XCTAssertFalse(second.showFurigana)
+    }
+
+    func test_furiganaScaleFactor_defaultsAndPersistence() {
+        let first = makeStore()
+        XCTAssertEqual(first.furiganaScaleFactor, 0.6, accuracy: 0.001)
+
+        first.furiganaScaleFactor = 0.65
+
+        let second = makeStore()
+        XCTAssertEqual(second.furiganaScaleFactor, 0.65, accuracy: 0.001)
+    }
 }

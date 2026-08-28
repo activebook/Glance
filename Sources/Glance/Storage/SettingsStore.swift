@@ -70,6 +70,12 @@ final class SettingsStore: ObservableObject {
     @Published var historyLayoutMode: HistoryLayoutMode {
         didSet { persist() }
     }
+    @Published var showFurigana: Bool {
+        didSet { persist() }
+    }
+    @Published var furiganaScaleFactor: Double {
+        didSet { persist() }
+    }
 
     // MARK: - Dependencies
 
@@ -106,6 +112,8 @@ final class SettingsStore: ObservableObject {
             ttsEngine = loaded.ttsEngine ?? .edgeNeural
             ttsRate = loaded.ttsRate ?? 1.0
             historyLayoutMode = loaded.historyLayoutMode ?? .sidebar
+            showFurigana = loaded.showFurigana ?? true
+            furiganaScaleFactor = loaded.furiganaScaleFactor ?? 0.6
         } else {
             endpoints = []
             defaultEndpointID = nil
@@ -128,6 +136,8 @@ final class SettingsStore: ObservableObject {
             ttsEngine = .edgeNeural
             ttsRate = 1.0
             historyLayoutMode = .sidebar
+            showFurigana = true
+            furiganaScaleFactor = 0.6
         }
     }
 
@@ -153,6 +163,8 @@ final class SettingsStore: ObservableObject {
         var ttsEngine: TTSEngine? = .edgeNeural
         var ttsRate: Double? = 1.0
         var historyLayoutMode: HistoryLayoutMode? = .sidebar
+        var showFurigana: Bool? = true
+        var furiganaScaleFactor: Double? = 0.6
 
         init(endpoints: [EndpointConfig],
              defaultEndpointID: UUID?,
@@ -174,7 +186,9 @@ final class SettingsStore: ObservableObject {
              automaticallyCheckForUpdates: Bool = true,
              ttsEngine: TTSEngine = .edgeNeural,
              ttsRate: Double = 1.0,
-             historyLayoutMode: HistoryLayoutMode = .sidebar) {
+             historyLayoutMode: HistoryLayoutMode = .sidebar,
+             showFurigana: Bool = true,
+             furiganaScaleFactor: Double = 0.6) {
             self.endpoints = endpoints
             self.defaultEndpointID = defaultEndpointID
             self.activeEndpointID = activeEndpointID
@@ -196,6 +210,8 @@ final class SettingsStore: ObservableObject {
             self.ttsEngine = ttsEngine
             self.ttsRate = ttsRate
             self.historyLayoutMode = historyLayoutMode
+            self.showFurigana = showFurigana
+            self.furiganaScaleFactor = furiganaScaleFactor
         }
 
         /// Backward-compatible decode (M1.3+): blobs written before new
@@ -223,6 +239,8 @@ final class SettingsStore: ObservableObject {
             ttsEngine = try container.decodeIfPresent(TTSEngine.self, forKey: .ttsEngine) ?? .edgeNeural
             ttsRate = try container.decodeIfPresent(Double.self, forKey: .ttsRate) ?? 1.0
             historyLayoutMode = try container.decodeIfPresent(HistoryLayoutMode.self, forKey: .historyLayoutMode) ?? .sidebar
+            showFurigana = try container.decodeIfPresent(Bool.self, forKey: .showFurigana) ?? true
+            furiganaScaleFactor = try container.decodeIfPresent(Double.self, forKey: .furiganaScaleFactor) ?? 0.6
         }
     }
 
@@ -251,7 +269,9 @@ final class SettingsStore: ObservableObject {
             automaticallyCheckForUpdates: automaticallyCheckForUpdates,
             ttsEngine: ttsEngine,
             ttsRate: ttsRate,
-            historyLayoutMode: historyLayoutMode
+            historyLayoutMode: historyLayoutMode,
+            showFurigana: showFurigana,
+            furiganaScaleFactor: furiganaScaleFactor
         )
         if let data = try? JSONEncoder().encode(blob) {
             defaults.set(data, forKey: Self.storageKey)
