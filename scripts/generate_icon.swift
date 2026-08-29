@@ -2,9 +2,18 @@ import AppKit
 import CoreGraphics
 
 func renderIcon(size: CGFloat) -> NSImage {
-    let image = NSImage(size: NSSize(width: size, height: size))
+    let targetSize = NSSize(width: size, height: size)
+    let image = NSImage(size: targetSize)
     image.lockFocus()
     guard let ctx = NSGraphicsContext.current?.cgContext else {
+        image.unlockFocus()
+        return image
+    }
+
+    if let masterImage = NSImage(contentsOfFile: "images/AppIcon.png"),
+       let cgImage = masterImage.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+        ctx.interpolationQuality = .high
+        ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: size, height: size))
         image.unlockFocus()
         return image
     }
